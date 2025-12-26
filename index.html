@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.1.4</h1>
+<h1>Mini gra QR - 9.2.1</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -34,15 +34,21 @@
   <div id="reader"></div>
 </div>
 
+<div id="taskSelect" style="display:none;">
+  <p class="info big">Wybierz zadanie:</p>
+  <button onclick="selectTask('QUIZ')">QUIZ</button>
+  <button onclick="selectTask('SCAN_ONLY')">TYLKO SKAN</button>
+</div>
+
 <div id="screen-end" style="display:none;">
-  <h2 id="endMessage"></h2>
+<h2 id="endMessage"></h2>
 </div>
 
 <script>
 /* ===================== PODSTAWY ===================== */
 
 const CODES = ["A","B","C"];
-let gameState = "INIT"; // INIT | QUIZ | SCAN | FINISHED
+let gameState = "INIT"; // INIT | TASK_SELECT | QUIZ | SCAN | FINISHED
 
 let currentTarget = null;
 let previousTargets = [];
@@ -81,6 +87,32 @@ function pickNextTarget() {
 
   targetInfo.innerText = `Następny kod: ${currentTarget}`;
   updateHistory();
+}
+
+/* ===================== WYBÓR ZADANIA ===================== */
+
+const taskSelect = document.getElementById("taskSelect");
+let currentTask = null;
+
+function showTaskSelect() {
+  gameState = "TASK_SELECT";
+  quizBox.innerHTML = "";
+  reader.style.display = "none";
+  taskSelect.style.display = "block";
+  status.innerText = "";
+  timerInfo.innerText = "";
+}
+
+function selectTask(task) {
+  currentTask = task;
+  taskSelect.style.display = "none";
+
+  if(task === "QUIZ") {
+    generateQuiz();
+  } else {
+    status.innerText = "Pomięto zadanie – skanuj kod.";
+    startScanPhase();
+  }
 }
 
 /* ===================== QUIZ ===================== */
@@ -156,7 +188,7 @@ function onScan(text) {
       endGame("Wygrana! 5 punktów");
     } else {
       pickNextTarget();
-      generateQuiz();
+      showTaskSelect();
     }
   }
 }
@@ -221,7 +253,7 @@ startBtn.onclick = () => {
   document.getElementById("screen-init").style.display = "none";
   document.getElementById("screen-game").style.display = "block";
   pickNextTarget();
-  generateQuiz();
+  showTaskSelect();
 };
 
 /* ===================== NARZĘDZIA ===================== */
@@ -238,6 +270,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
