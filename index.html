@@ -11,26 +11,12 @@
   button { padding: 10px 18px; font-size: 18px; margin: 5px; }
   .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
   .big { font-size: 22px; }
-
-  /* Nowe klasy wizualne */
-  .greenBig { color: green; font-size: 26px; font-weight: bold; }
-  .greenBlink {
-    color: green;
-    font-weight: bold;
-    animation: blink 1s infinite;
-  }
-  .redText { color: red; font-weight: bold; }
-
-  @keyframes blink {
-    0%, 50%, 100% { opacity: 1; }
-    25%, 75% { opacity: 0; }
-  }
 </style>
 </head>
 
 <body>
 
-<h1>Mini gra QR - 9.3.9</h1>
+<h1>Mini gra QR - 9.3.7</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -88,6 +74,8 @@ const quizBox = document.getElementById("quizBox");
 const reader = document.getElementById("reader");
 const taskSelect = document.getElementById("taskSelect");
 
+
+  
 /* ===================== HISTORIA ===================== */
 
 function updateHistory() {
@@ -102,8 +90,7 @@ function pickNextTarget() {
   currentTarget = available[Math.floor(Math.random() * available.length)];
   previousTargets.push(currentTarget);
 
-  // literka w zielonej dużej czcionce
-  targetInfo.innerHTML = `Następny kod: <span class="greenBig">${currentTarget}</span>`;
+  targetInfo.innerText = `Następny kod: ${currentTarget}`;
   updateHistory();
 }
 
@@ -124,9 +111,6 @@ function selectTask(task) {
   currentTask = task;
   taskSelect.style.display = "none";
 
-  // czyścimy klasy statusu
-  status.className = "info";
-
   if(task === "QUIZ") {
     status.innerText = "QUIZ";
     generateQuiz();
@@ -146,9 +130,9 @@ function selectTask(task) {
 function resolveExpectedCode(task, target) {
   if(task !== "MIX") return target;
 
-  const index = CODES.indexOf(target);
-  const nextIndex = (index + 1) % CODES.length;
-  return CODES[nextIndex];
+const index = CODES.indexOf(target);
+const nextIndex = (index + 1) % CODES.length;
+return CODES[nextIndex];
 }
   
 /* ===================== QUIZ ===================== */
@@ -181,11 +165,9 @@ function generateQuiz() {
 
 function quizAnswer(answer, correct) {
   if(answer === correct) {
-    status.className = "info"; // usuń poprzednie klasy
-    status.innerText = "DOBRZE! Skanuj kod.";
+    status.innerText = "Dobrze! Skanuj kod.";
     startScanPhase();
   } else {
-    status.className = "info redText";
     status.innerText = "Błąd w quizie – cofanie";
     handleFail();
   }
@@ -218,40 +200,35 @@ function onScan(text) {
 
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
-  if(code === expectedCode) {
+if(code === expectedCode) {
 
-    const wasMix = currentTask === "MIX";
-    currentTask = null;
+  // ✅ ZAMKNIĘCIE ETAPU MIX
+  const wasMix = currentTask === "MIX";
+  currentTask = null;
 
-    clearInterval(countdownInterval);
-    points++;
-    pointsEl.innerText = points;
+  clearInterval(countdownInterval);
+  points++;
+  pointsEl.innerText = points;
+  status.innerText = "DOBRZE!";
 
-    // pozytywny komunikat
-    status.className = "info";
-    status.innerText = "DOBRZE!";
-
-    if(points >= 5) {
-      endGame("Wygrana! 5 punktów");
-    } else {
-      pickNextTarget();
-      showTaskSelect();
-    }
-
-  } else if(currentTask === "MIX") {
-
-    currentTask = null;
-
-    status.className = "info redText";
-    status.innerHTML = `Zły kod! Wracasz do poprzedniego skanu`;
-    handleFail(true);
-
+  if(points >= 5) {
+    endGame("Wygrana! 5 punktów");
   } else {
-    status.className = "info redText";
-    status.innerHTML = `Niepoprawny kod – spróbuj jeszcze raz`;
+    pickNextTarget();
+    showTaskSelect();
   }
-}
+} else if(currentTask === "MIX") {
 
+  // 🔒 zamykamy lokalny etap MIX
+  currentTask = null;
+
+  status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
+  handleFail(true);
+
+} else {
+  status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+}
+}
 /* ===================== CZAS ===================== */
 
 function startCountdown() {
@@ -263,14 +240,14 @@ function startCountdown() {
     countdown--;
     timerInfo.innerText = `Czas: ${countdown}s`;
     if(countdown <= 0) {
-      clearInterval(countdownInterval);
+  clearInterval(countdownInterval);
 
-      if (currentTask === "MIX") {
-        currentTask = null; // ZAMKNIĘCIE MIX PRZY TIMEOUT
-      }
+  if (currentTask === "MIX") {
+    currentTask = null; // ZAMKNIĘCIE MIX PRZY TIMEOUT
+  }
 
-      handleFail();
-    }
+  handleFail();
+}
   },1000);
 }
 
@@ -280,23 +257,24 @@ function handleFail() {
   clearInterval(countdownInterval);
 
   if(previousTargets.length <= 1) {
-    endGame("<span class='redText'>Porażka – brak punktów</span>");
+    endGame("Porażka – brak punktów");
     return;
   }
 
+  // cofamy historię
   previousTargets.pop();
   currentTarget = previousTargets[previousTargets.length - 1];
 
+  // odejmujemy punkt
   if(points > 0) points--;
   pointsEl.innerText = points;
 
   updateHistory();
+  targetInfo.innerText = `Powtórz kod: ${currentTarget}`;
+  status.innerText = "Cofnięcie – zeskanuj ponownie";
 
-  // mrygający komunikat
-  status.className = "info greenBlink";
-  status.innerHTML = `Cofnięcie !!! SKANUJ &gt; ${currentTarget}`;
-
-  startScanPhase();
+  // ❗ KLUCZOWA ZMIANA
+  startScanPhase();   // ✅ ZAWSZE WRACAMY DO SKANU
 }
 
 /* ===================== KONIEC ===================== */
@@ -305,7 +283,7 @@ function endGame(msg) {
   gameState = "FINISHED";
   document.getElementById("screen-game").style.display = "none";
   document.getElementById("screen-end").style.display = "block";
-  document.getElementById("endMessage").innerHTML = msg;
+  document.getElementById("endMessage").innerText = msg;
   if(html5QrCode) html5QrCode.stop();
   clearInterval(countdownInterval);
 }
