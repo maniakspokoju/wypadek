@@ -30,7 +30,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.3.8</h1>
+<h1>Mini gra QR - 9.3.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -293,8 +293,16 @@ function handleFail() {
   updateHistory();
 
   // mrygający komunikat
-  status.className = "info greenBlink";
-  status.innerHTML = `Cofnięcie !!! SKANUJ &gt; ${currentTarget}`;
+ // status.className = "info greenBlink";
+//  status.innerHTML = `Cofnięcie !!! SKANUJ &gt; ${currentTarget}`;
+
+ // ❗ targetInfo pokazuje zawsze kod do zeskanowania
+  targetInfo.innerHTML = `Następny kod: <span class="greenBig">${currentTarget}</span>`;
+
+  // migający status dla cofnięcia
+  status.innerHTML = `<span class="greenBlink">Cofnięcie !!! SKANUJ > ${currentTarget}</span>`;
+
+  
 
   startScanPhase();
 }
@@ -333,3 +341,4 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
