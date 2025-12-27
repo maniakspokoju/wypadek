@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.7</h1>
+<h1>Mini gra QR - 9.5.8</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -217,7 +217,6 @@ function onScan(text) {
     currentTask = null;
     clearInterval(countdownInterval);
 
-    // ⏱️ reset czasu po CZAS
     timeBonus = 0;
 
     points++;
@@ -235,20 +234,21 @@ function onScan(text) {
     });
 
   } else if(currentTask === "MIX") {
+    // tylko w MIX cofamy i pokazujemy PORAŻKA
     currentTask = null;
     status.className = "red";
     status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
-    handleFail();
-
-  } else {
-    status.className = "red";
-    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
-    // tutaj pojawia się napis PORAŻKA
     showScanResult(false, () => {
         handleFail();
     });
+
+  } else {
+    // w pozostałych przypadkach tylko komunikat u góry
+    status.className = "red";
+    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+    // skaner dalej aktywny, nic więcej nie robimy
   }
-} // <- zamknięcie funkcji onScan
+}
 
 /* CZAS */
 function startCountdown() {
@@ -358,6 +358,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
