@@ -41,7 +41,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.3</h1>
+<h1>Mini gra QR - 9.5.4</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -88,6 +88,8 @@ const pointsEl = document.getElementById("points");
 const quizBox = document.getElementById("quizBox");
 const reader = document.getElementById("reader");
 const taskSelect = document.getElementById("taskSelect");
+const scanResult = document.getElementById("scanResult");
+
 
 /* HISTORIA */
 function updateHistory() {
@@ -233,7 +235,7 @@ function onScan(text) {
       pickNextTarget();
       startRandomTask();
     }
-
+});
   } else if(currentTask === "MIX") {
 
     currentTask = null;
@@ -287,7 +289,7 @@ function activateScanBlock() {
 function showScanResult(success, callback) {
   scanBlocked = true;
 
-  scanner.style.display = "none";
+  reader.style.display = "none";
   scanResult.style.display = "flex";
 
   scanResult.className = success ? "success" : "fail";
@@ -295,7 +297,7 @@ function showScanResult(success, callback) {
 
   setTimeout(() => {
     scanResult.style.display = "none";
-    scanner.style.display = "block";
+    reader.style.display = "block";
     scanBlocked = false;
     if (callback) callback();
   }, 1000);
@@ -357,6 +359,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
