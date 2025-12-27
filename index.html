@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.8</h1>
+<h1>Mini gra QR - 9.5.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -171,6 +171,8 @@ function generateQuiz() {
     <button onclick="quizAnswer('>','${correct}')">&gt;</button>
     <button onclick="quizAnswer('<','${correct}')">&lt;</button>
   `;
+ // start odliczania 5 sekund dla quizu
+  startCountdown();
 }
 
 function quizAnswer(answer, correct) {
@@ -190,7 +192,6 @@ function startScanPhase() {
   gameState = "SCAN";
   quizBox.innerHTML = "";
   reader.style.display = "block";
-  startCountdown();
 
   if(!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
@@ -358,6 +359,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
