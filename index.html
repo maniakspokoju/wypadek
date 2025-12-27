@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.9</h1>
+<h1>Mini gra QR - 9.5.8</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -157,6 +157,8 @@ function generateQuiz() {
   reader.style.display = "none";
   quizBox.innerHTML = "";
   timerInfo.innerText = "";
+
+  // losowe działanie quizu
   const a = rand();
   const b = rand();
   const c = rand();
@@ -166,15 +168,36 @@ function generateQuiz() {
   const left = evalSafe(a, op1, b);
   const right = evalSafe(c, op2, d);
   const correct = left > right ? ">" : "<";
+
   quizBox.innerHTML = `
     <p class="big">${a} ${op1} ${b} ? ${c} ${op2} ${d}</p>
     <button onclick="quizAnswer('>','${correct}')">&gt;</button>
     <button onclick="quizAnswer('<','${correct}')">&lt;</button>
   `;
- // start odliczania 5 sekund dla quizu
-  startCountdown();
+
+  startQuizScanCountdown(); // uruchom timer 5 sekund dla całej sekwencji quiz + skan
 }
 
+ /* CZAS FAZY QUIZU */
+function startQuizScanCountdown() {
+  clearInterval(countdownInterval);
+  countdown = 5; // całkowity czas na quiz + skan
+  timerInfo.innerText = `Czas: ${countdown}s`;
+
+  countdownInterval = setInterval(() => {
+    countdown--;
+    timerInfo.innerText = `Czas: ${countdown}s`;
+
+    if(countdown <= 0) {
+      clearInterval(countdownInterval);
+      timerInfo.innerText = `Czas minął!`;
+      status.className = "red";
+      status.innerText = "Przekroczono limit czasu – cofanie";
+      handleFail();
+    }
+  }, 1000);
+}
+ 
 function quizAnswer(answer, correct) {
   if(answer === correct) {
     status.className = "";
@@ -359,6 +382,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
