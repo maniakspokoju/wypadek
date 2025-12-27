@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.3.11</h1>
+<h1>Mini gra QR - 9.3.2</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -132,8 +132,8 @@ function resolveExpectedCode(task, target) {
   if(task !== "MIX") return target;
 
   const index = CODES.indexOf(target);
-  const nextIndex = (index + 1) % CODES.length;
-  return CODES[nextIndex];
+  //const nextIndex = (index + 1) % CODES.length;
+  return CODES[(index + 1) % CODES.length];
 }
   
 /* ===================== QUIZ ===================== */
@@ -202,27 +202,22 @@ function onScan(text) {
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
   if(code === expectedCode) {
-    // poprawny skan
     clearInterval(countdownInterval);
     points++;
     pointsEl.innerText = points;
     status.innerText = "DOBRZE!";
 
-    if(points >= 5) {
-      endGame("Wygrana! 5 punktów");
-    } else {
+    if(points >= 5) endGame("Wygrana! 5 punktów");
+    else {
       pickNextTarget();
       showTaskSelect();
     }
-
   } else if(currentTask === "MIX") {
-    status.innerText = "Zły kod!";
-    handleFail(true);
+    status.innerText = "Zły kod! Spróbuj ponownie";
+    handleFail(false); // cofanie tylko dla tego skanu, bez zmiany mapy QR
   } else {
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
-    // countdown dalej działa
   }
-
 } // <- ta klamra zamyka całą funkcję onScan
 
 /* ===================== CZAS ===================== */
@@ -302,3 +297,4 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
