@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -9,36 +7,28 @@
 
 <style>
  body { font-family: Arial, sans-serif; padding: 20px; }
-  #reader { width: 260px; margin-top: 10px; display:none; }
-  button { padding: 10px 18px; font-size: 18px; margin: 5px; }
-  .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
-  .big { font-size: 22px; }
-  .green { color: green; }
-  .red { color: red; }
-  .blink { animation: blinker 0.7s linear infinite; }
-  @keyframes blinker { 50% { opacity: 0; } }
+ #reader { width: 260px; margin-top: 10px; display:none; }
+ button { padding: 10px 18px; font-size: 18px; margin: 5px; }
+ .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
+ .big { font-size: 22px; }
+ .green { color: green; }
+ .red { color: red; }
+ .blink { animation: blinker 0.7s linear infinite; }
+ @keyframes blinker { 50% { opacity: 0; } }
  #scanResult {
-  width: 100%;
-  height: 300px;
-  display: none;
-  font-size: 48px;
-  font-weight: bold;
-}
-
-#scanResult.success {
-  color: #00cc44;
-}
-
-#scanResult.fail {
-  color: #cc0000;
-}
-
+   width: 100%;
+   height: 300px;
+   display: none;
+   font-size: 48px;
+   font-weight: bold;
+ }
+ #scanResult.success { color: #00cc44; }
+ #scanResult.fail { color: #cc0000; }
 </style>
 </head>
 
 <body>
-
-<h1>Mini gra QR - 9.5.9</h1>
+<h1>Mini gra QR - 9.5.8</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -60,21 +50,20 @@
 <div id="screen-end" style="display:none;">
 <h2 id="endMessage"></h2>
 </div>
- 
+
 <script>
 const CODES = ["A","B","C"];
 let gameState = "INIT";
 let currentTarget = null;
 let previousTargets = [];
 let points = 0;
-let countdown = 5;
-let countdownInterval;
 let html5QrCode;
 let currentTask = null;
 let timeBonus = 0;
 let scanBlocked = false;
 let blockTimeout = null;
-let quizTimerInterval;
+let taskCountdown = 5;
+let taskCountdownInterval;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
@@ -85,9 +74,7 @@ const historyInfo = document.getElementById("historyInfo");
 const pointsEl = document.getElementById("points");
 const quizBox = document.getElementById("quizBox");
 const reader = document.getElementById("reader");
-const taskSelect = document.getElementById("taskSelect");
 const scanResult = document.getElementById("scanResult");
-
 
 /* HISTORIA */
 function updateHistory() {
@@ -126,17 +113,16 @@ function selectTask(task) {
   }
   else if(task === "TIME") {
     status.className = "";
-    // losowo +2 lub -2 s
     timeBonus = Math.random() < 0.5 ? 2 : -2;
     const sign = timeBonus > 0 ? "+" : "";
     status.innerText = `Bonus czasowy: ${sign}${timeBonus}s`;
     startScanPhase();
   }
   else if(task === "BLOCK") {
-  status.className = "";
-  status.innerText = "BLOKADA SKANERA – 3 sekundy";
-  startScanPhase();
-  activateScanBlock();
+    status.className = "";
+    status.innerText = "BLOKADA SKANERA – 3 sekundy";
+    startScanPhase();
+    activateScanBlock();
   }
   else {
     status.className = "";
@@ -159,7 +145,11 @@ function generateQuiz() {
   quizBox.innerHTML = "";
   timerInfo.innerText = "";
 
-  // losowe działanie quizu
+  startTaskCountdown(() => {
+      // jeśli czas minął podczas QUIZ lub skanu po quizie
+      showScanResult(false, handleFail);
+  });
+
   const a = rand();
   const b = rand();
   const c = rand();
@@ -175,38 +165,17 @@ function generateQuiz() {
     <button onclick="quizAnswer('>','${correct}')">&gt;</button>
     <button onclick="quizAnswer('<','${correct}')">&lt;</button>
   `;
-
-   // start timer 5 sekund obejmujący quiz + skan
-  startQuizTimer();
 }
 
- /* CZAS FAZY QUIZU */
-function startQuizTimer() {
-  clearInterval(quizTimerInterval);
-  countdown = 5; // 5 sekund dla całego QUIZ + skan
-  timerInfo.innerText = `Czas: ${countdown}s`;
-
-  quizTimerInterval = setInterval(() => {
-    countdown--;
-    timerInfo.innerText = `Czas: ${countdown}s`;
-
-    if(countdown <= 0) {
-      clearInterval(quizTimerInterval);
-      status.className = "red";
-      status.innerText = "Przekroczono limit czasu – cofanie";
-      handleFail();
-    }
-  }, 1000);
-}
- 
 function quizAnswer(answer, correct) {
   if(answer === correct) {
     status.className = "";
     status.innerText = "Dobrze! Skanuj kod.";
-    startScanPhase();
+    startScanPhase(); // timer QUIZ dalej działa
   } else {
     status.className = "red";
     status.innerText = "Błąd w quizie – cofanie";
+    clearInterval(taskCountdownInterval);
     handleFail();
   }
 }
@@ -216,6 +185,11 @@ function startScanPhase() {
   gameState = "SCAN";
   quizBox.innerHTML = "";
   reader.style.display = "block";
+
+  // Timer dla QUIZ już działa, dla innych faz startujemy osobno
+  if(currentTask !== "QUIZ") startTaskCountdown(() => {
+      showScanResult(false, handleFail);
+  });
 
   if(!html5QrCode) {
     html5QrCode = new Html5Qrcode("reader");
@@ -230,8 +204,6 @@ function startScanPhase() {
 
 function onScan(text) {
   if(gameState !== "SCAN") return;
-
-  // 🔒 BLOKADA SKANERA
   if(scanBlocked) return;
 
   const url = new URL(text, window.location.href);
@@ -240,8 +212,7 @@ function onScan(text) {
 
   if(code === expectedCode) {
     currentTask = null;
-    clearInterval(countdownInterval);
-
+    clearInterval(taskCountdownInterval);
     timeBonus = 0;
 
     points++;
@@ -251,57 +222,46 @@ function onScan(text) {
     status.innerText = "DOBRZE!";
 
     showScanResult(true, () => {
-if(points >= 5) {
-    endGame("Wygrana! 5 punktów");
-} else {
-    clearInterval(quizTimerInterval); // zatrzymanie wspólnego timera dla QUIZ
-    pickNextTarget();
-    startRandomTask();
-}
+        if(points >= 5) endGame("Wygrana! 5 punktów");
+        else {
+            pickNextTarget();
+            startRandomTask();
+        }
     });
 
   } else if(currentTask === "MIX") {
-    // tylko w MIX cofamy i pokazujemy PORAŻKA
     currentTask = null;
     status.className = "red";
     status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
-    showScanResult(false, () => {
-        handleFail();
-    });
+    showScanResult(false, handleFail);
 
   } else {
-    // w pozostałych przypadkach tylko komunikat u góry
     status.className = "red";
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
-    // skaner dalej aktywny, nic więcej nie robimy
   }
 }
 
-/* CZAS */
-function startCountdown() {
-  clearInterval(countdownInterval);
-  countdown = 5 + timeBonus;
-  timerInfo.innerText = `Czas: ${countdown}s`;
+/* TIMER ZADANIA */
+function startTaskCountdown(callback) {
+    clearInterval(taskCountdownInterval);
+    taskCountdown = 5 + timeBonus;
+    timerInfo.innerText = `Czas: ${taskCountdown}s`;
 
-  countdownInterval = setInterval(() => {
-    countdown--;
-    timerInfo.innerText = `Czas: ${countdown}s`;
-    if(countdown <= 0) {
-      clearInterval(countdownInterval);
-      timeBonus = 0;
-      if(currentTask === "MIX") currentTask = null;
-      showScanResult(false, () => {
-        handleFail();
-      });
-    }
-  }, 1000);
+    taskCountdownInterval = setInterval(() => {
+        taskCountdown--;
+        timerInfo.innerText = `Czas: ${taskCountdown}s`;
+        if(taskCountdown <= 0) {
+            clearInterval(taskCountdownInterval);
+            timeBonus = 0;
+            if(currentTask === "MIX") currentTask = null;
+            if(callback) callback();
+        }
+    }, 1000);
 }
 
 /* BLOKADA */
 function activateScanBlock() {
   scanBlocked = true;
-
-  // informacja wizualna (opcjonalna, ale testowo bardzo pomocna)
   status.className = "red";
   status.innerText = "BLOKADA AKTYWNA – SKANER NIE CZYTA";
 
@@ -312,6 +272,7 @@ function activateScanBlock() {
   }, 2000);
 }
 
+/* WYNIK SKANU */
 function showScanResult(success, callback) {
   scanBlocked = true;
 
@@ -329,19 +290,17 @@ function showScanResult(success, callback) {
   }, 1000);
 }
 
- 
-
 /* COFANIE */
 function handleFail() {
-
   timeBonus = 0;
-  
-  clearInterval(countdownInterval);
+  clearInterval(taskCountdownInterval);
+
   if(previousTargets.length <= 1) {
     status.className = "red";
     endGame("Porażka – brak punktów");
     return;
   }
+
   previousTargets.pop();
   currentTarget = previousTargets[previousTargets.length - 1];
   if(points > 0) points--;
@@ -353,7 +312,7 @@ function handleFail() {
   startScanPhase();
 }
 
-/* KONIEC */
+/* KONIEC GRY */
 function endGame(msg) {
   gameState = "FINISHED";
   document.getElementById("screen-game").style.display = "none";
@@ -361,7 +320,7 @@ function endGame(msg) {
   document.getElementById("endMessage").className = "green";
   document.getElementById("endMessage").innerText = msg;
   if(html5QrCode) html5QrCode.stop();
-  clearInterval(countdownInterval);
+  clearInterval(taskCountdownInterval);
 }
 
 /* START */
@@ -385,20 +344,3 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
