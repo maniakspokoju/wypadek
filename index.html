@@ -22,7 +22,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.4.1</h1>
+<h1>Mini gra QR - 9.4.4</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -46,6 +46,7 @@
   <button onclick="selectTask('SCAN_ONLY')">SKAN</button>
   <button onclick="selectTask('MIX')">MIX</button>
   <button onclick="selectTask('TIME')">CZAS</button>
+  <button onclick="selectTask('BLOCK')">BLOKADA</button>
 </div>
 
 <div id="screen-end" style="display:none;">
@@ -63,6 +64,8 @@ let countdownInterval;
 let html5QrCode;
 let currentTask = null;
 let timeBonus = 0;
+let scanBlocked = false;
+let blockTimeout = null;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
@@ -121,6 +124,12 @@ function selectTask(task) {
     const sign = timeBonus > 0 ? "+" : "";
     status.innerText = `Bonus czasowy: ${sign}${timeBonus}s`;
     startScanPhase();
+  }
+  else if(task === "BLOCK") {
+  status.className = "";
+  status.innerText = "BLOKADA SKANERA – 3 sekundy";
+  startScanPhase();
+  activateScanBlock();
   }
   else {
     status.className = "";
@@ -190,6 +199,10 @@ function startScanPhase() {
 
 function onScan(text) {
   if(gameState !== "SCAN") return;
+
+  // 🔒 BLOKADA SKANERA
+  if(scanBlocked) return;
+  
   const url = new URL(text, window.location.href);
   const code = url.searchParams.get("code");
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
@@ -233,6 +246,22 @@ function startCountdown() {
     }
   },1000);
 }
+
+/* BLOKADA */
+function activateScanBlock() {
+  scanBlocked = true;
+
+  // informacja wizualna (opcjonalna, ale testowo bardzo pomocna)
+  status.className = "green";
+  status.innerText = "BLOKADA AKTYWNA – SKANER NIE CZYTA";
+
+  blockTimeout = setTimeout(() => {
+    scanBlocked = false;
+    status.className = "";
+    status.innerText = "SKANER AKTYWNY – SZUKAJ KODU";
+  }, 2000);
+}
+
 
 /* COFANIE */
 function handleFail() {
@@ -285,4 +314,5 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
