@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.3.2</h1>
+<h1>Mini gra QR - 9.3.3</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -131,9 +131,9 @@ function selectTask(task) {
 function resolveExpectedCode(task, target) {
   if(task !== "MIX") return target;
 
-  const index = CODES.indexOf(target);
-  //const nextIndex = (index + 1) % CODES.length;
-  return CODES[(index + 1) % CODES.length];
+const index = CODES.indexOf(target);
+const nextIndex = (index + 1) % CODES.length;
+return CODES[nextIndex];
 }
   
 /* ===================== QUIZ ===================== */
@@ -201,24 +201,34 @@ function onScan(text) {
 
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
-  if(code === expectedCode) {
-    clearInterval(countdownInterval);
-    points++;
-    pointsEl.innerText = points;
-    status.innerText = "DOBRZE!";
+if(code === expectedCode) {
 
-    if(points >= 5) endGame("Wygrana! 5 punktów");
-    else {
-      pickNextTarget();
-      showTaskSelect();
-    }
-  } else if(currentTask === "MIX") {
-    status.innerText = "Zły kod! Spróbuj ponownie";
-    handleFail(false); // cofanie tylko dla tego skanu, bez zmiany mapy QR
+  // ✅ ZAMKNIĘCIE ETAPU MIX
+  const wasMix = currentTask === "MIX";
+  currentTask = null;
+
+  clearInterval(countdownInterval);
+  points++;
+  pointsEl.innerText = points;
+  status.innerText = "DOBRZE!";
+
+  if(points >= 5) {
+    endGame("Wygrana! 5 punktów");
   } else {
-    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+    pickNextTarget();
+    showTaskSelect();
   }
-} // <- ta klamra zamyka całą funkcję onScan
+} else if(currentTask === "MIX") {
+
+  // 🔒 zamykamy lokalny etap MIX
+  currentTask = null;
+
+  status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
+  handleFail(true);
+
+} else {
+  status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+}
 
 /* ===================== CZAS ===================== */
 
@@ -297,4 +307,5 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
