@@ -17,12 +17,31 @@
   .red { color: red; }
   .blink { animation: blinker 0.7s linear infinite; }
   @keyframes blinker { 50% { opacity: 0; } }
+ #scanResult {
+  width: 100%;
+  height: 300px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  font-weight: bold;
+  text-align: center;
+}
+
+#scanResult.success {
+  color: #00cc44;
+}
+
+#scanResult.fail {
+  color: #cc0000;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>Mini gra QR - 9.5.1</h1>
+<h1>Mini gra QR - 9.5.3</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -38,12 +57,13 @@
 
   <div id="quizBox"></div>
   <div id="reader"></div>
+  <div id="scanResult" style="display:none;"></div>
 </div>
 
 <div id="screen-end" style="display:none;">
 <h2 id="endMessage"></h2>
 </div>
-
+ 
 <script>
 const CODES = ["A","B","C"];
 let gameState = "INIT";
@@ -207,9 +227,9 @@ function onScan(text) {
     status.className = "";
     status.innerText = "DOBRZE!";
 
-    if(points >= 5) {
-      endGame("Wygrana! 5 punktów");
-    } else {
+      showScanResult(true, () => {
+    if(points >= 5) endGame("Wygrana! 5 punktów");
+    else {
       pickNextTarget();
       startRandomTask();
     }
@@ -264,6 +284,24 @@ function activateScanBlock() {
   }, 2000);
 }
 
+function showScanResult(success, callback) {
+  scanBlocked = true;
+
+  scanner.style.display = "none";
+  scanResult.style.display = "flex";
+
+  scanResult.className = success ? "success" : "fail";
+  scanResult.innerText = success ? "SUKCES" : "PORAŻKA";
+
+  setTimeout(() => {
+    scanResult.style.display = "none";
+    scanner.style.display = "block";
+    scanBlocked = false;
+    if (callback) callback();
+  }, 1000);
+}
+
+ 
 
 /* COFANIE */
 function handleFail() {
@@ -319,6 +357,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
