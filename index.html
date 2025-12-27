@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.2.8</h1>
+<h1>Mini gra QR - 9.2.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -200,24 +200,30 @@ function onScan(text) {
   const code = url.searchParams.get("code");
 
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
-  if(code === expectedCode) {
-    
-    clearInterval(countdownInterval);
-    points++;
-    pointsEl.innerText = points;
-    status.innerText = "DOBRZE!";
 
-    if(points >= 5) {
-      endGame("Wygrana! 5 punktów");
-    } else {
-      pickNextTarget();
-      showTaskSelect();
-    }
-  } else {                                          //zmiana >
-    status.innerText = "Zły kod!";
-    handleFail();                                       //zmiana <
-    }
+if(code === expectedCode) {
+  // poprawny skan
+  clearInterval(countdownInterval);
+  points++;
+  pointsEl.innerText = points;
+  status.innerText = "DOBRZE!";
+
+  if(points >= 5) {
+    endGame("Wygrana! 5 punktów");
+  } else {
+    pickNextTarget();
+    showTaskSelect(); // wybór zadania przed kolejnym skanem
   }
+
+} else if(currentTask === "MIX") {
+  // tylko w MIX błędny kod = cofnięcie
+  status.innerText = "Zły kod!";
+  handleFail();
+} else {
+  // w pozostałych trybach ignorujemy złe kody
+  status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+  // countdown dalej działa
+}
 
 /* ===================== CZAS ===================== */
 
@@ -296,6 +302,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
