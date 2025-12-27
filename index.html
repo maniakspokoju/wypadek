@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.3.1</h1>
+<h1>Mini gra QR - 9.3.11</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -217,7 +217,7 @@ function onScan(text) {
 
   } else if(currentTask === "MIX") {
     status.innerText = "Zły kod!";
-    handleFail();
+    handleFail(true);
   } else {
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
     // countdown dalej działa
@@ -302,18 +302,3 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
