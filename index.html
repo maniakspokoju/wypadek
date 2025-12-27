@@ -22,7 +22,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.4.5</h1>
+<h1>Mini gra QR - 9.5.0</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -190,38 +190,45 @@ function onScan(text) {
 
   // 🔒 BLOKADA SKANERA
   if(scanBlocked) return;
-  
+
   const url = new URL(text, window.location.href);
   const code = url.searchParams.get("code");
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
   if(code === expectedCode) {
-    const wasMix = currentTask === "MIX";
     currentTask = null;
     clearInterval(countdownInterval);
 
+    // ⏱️ reset czasu po CZAS
     timeBonus = 0;
-    
+
     points++;
     pointsEl.innerText = points;
+
     status.className = "";
     status.innerText = "DOBRZE!";
-    if(points >= 5) endGame("Wygrana! 5 punktów");
-    else {
-    pickNextTarget();
-    startRandomTask();
+
+    if(points >= 5) {
+      endGame("Wygrana! 5 punktów");
+    } else {
+      pickNextTarget();
+      startRandomTask();
     }
-  else if(currentTask === "MIX") {
+
+  } else if(currentTask === "MIX") {
+
     currentTask = null;
     status.className = "red";
     status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
     handleFail();
-  } 
-  else {
+
+  } else {
+
     status.className = "red";
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
 }
+
 
 /* CZAS */
 function startCountdown() {
@@ -313,6 +320,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
