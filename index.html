@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
+ body { font-family: Arial, sans-serif; padding: 20px; }
   #reader { width: 260px; margin-top: 10px; display:none; }
   button { padding: 10px 18px; font-size: 18px; margin: 5px; }
   .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
@@ -38,15 +38,6 @@
 
   <div id="quizBox"></div>
   <div id="reader"></div>
-</div>
-
-<div id="taskSelect" style="display:none;">
-  <p class="info big">Wybierz zadanie:</p>
-  <button onclick="selectTask('QUIZ')">QUIZ</button>
-  <button onclick="selectTask('SCAN_ONLY')">SKAN</button>
-  <button onclick="selectTask('MIX')">MIX</button>
-  <button onclick="selectTask('TIME')">CZAS</button>
-  <button onclick="selectTask('BLOCK')">BLOKADA</button>
 </div>
 
 <div id="screen-end" style="display:none;">
@@ -93,14 +84,11 @@ function pickNextTarget() {
   updateHistory();
 }
 
-/* WYBÓR ZADANIA */
-function showTaskSelect() {
-  gameState = "TASK_SELECT";
-  quizBox.innerHTML = "";
-  reader.style.display = "none";
-  taskSelect.style.display = "block";
-  status.innerText = "";
-  timerInfo.innerText = "";
+/* LOSOWA ZADANIA */
+function startRandomTask() {
+  const tasks = ["QUIZ", "SCAN_ONLY", "MIX", "TIME", "BLOCK"];
+  const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
+  selectTask(randomTask);
 }
 
 function selectTask(task) {
@@ -219,8 +207,10 @@ function onScan(text) {
     status.className = "";
     status.innerText = "DOBRZE!";
     if(points >= 5) endGame("Wygrana! 5 punktów");
-    else { pickNextTarget(); showTaskSelect(); }
-  } 
+    else {
+    pickNextTarget();
+    startRandomTask();
+    }
   else if(currentTask === "MIX") {
     currentTask = null;
     status.className = "red";
@@ -307,7 +297,7 @@ startBtn.onclick = () => {
   document.getElementById("screen-init").style.display = "none";
   document.getElementById("screen-game").style.display = "block";
   pickNextTarget();
-  showTaskSelect();
+  startRandomTask();
 };
 
 /* NARZĘDZIA */
@@ -323,6 +313,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
