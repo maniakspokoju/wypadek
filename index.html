@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.6</h1>
+<h1>Mini gra QR - 9.5.7</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -226,30 +226,29 @@ function onScan(text) {
     status.className = "";
     status.innerText = "DOBRZE!";
 
-      showScanResult(true, () => {
-    if(points >= 5) endGame("Wygrana! 5 punktów");
-    else {
-      pickNextTarget();
-      startRandomTask();
-    }
-});
-  } else if(currentTask === "MIX") {
+    showScanResult(true, () => {
+        if(points >= 5) endGame("Wygrana! 5 punktów");
+        else {
+            pickNextTarget();
+            startRandomTask();
+        }
+    });
 
+  } else if(currentTask === "MIX") {
     currentTask = null;
     status.className = "red";
     status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
     handleFail();
 
-  }else {
+  } else {
     status.className = "red";
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
-    // tutaj powinien pojawić się napis PORAŻKA
+    // tutaj pojawia się napis PORAŻKA
     showScanResult(false, () => {
         handleFail();
     });
-}
-
-
+  }
+} // <- zamknięcie funkcji onScan
 
 /* CZAS */
 function startCountdown() {
@@ -359,6 +358,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
