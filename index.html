@@ -21,11 +21,8 @@
   width: 100%;
   height: 300px;
   display: none;
-  align-items: center;
-  justify-content: center;
   font-size: 48px;
   font-weight: bold;
-  text-align: center;
 }
 
 #scanResult.success {
@@ -41,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.5</h1>
+<h1>Mini gra QR - 9.5.6</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -265,14 +262,13 @@ function startCountdown() {
     timerInfo.innerText = `Czas: ${countdown}s`;
     if(countdown <= 0) {
       clearInterval(countdownInterval);
-      
       timeBonus = 0;
-      
       if(currentTask === "MIX") currentTask = null;
- // tutaj też pokazujemy napis PORAŻKA
-    showScanResult(false, () => {
+      showScanResult(false, () => {
         handleFail();
-    });
+      });
+    }
+  }, 1000);
 }
 
 /* BLOKADA */
@@ -363,6 +359,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
