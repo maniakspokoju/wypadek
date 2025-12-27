@@ -11,12 +11,42 @@
   button { padding: 10px 18px; font-size: 18px; margin: 5px; }
   .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
   .big { font-size: 22px; }
+  
+  .next-code {
+  font-size: 32px;
+  color: green;
+  font-weight: bold;
+  
+  .scan-code {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.green {
+  color: green;
+}
+
+.red {
+  color: red;
+}
+
+.blink {
+  animation: blinkAnim 1s infinite;
+}
+
+@keyframes blinkAnim {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}
+}
 </style>
+
 </head>
 
 <body>
 
-<h1>Mini gra QR - 9.3.6</h1>
+<h1>Mini gra QR - 9.3.8</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -90,7 +120,8 @@ function pickNextTarget() {
   currentTarget = available[Math.floor(Math.random() * available.length)];
   previousTargets.push(currentTarget);
 
-  targetInfo.innerText = `Następny kod: ${currentTarget}`;
+  //targetInfo.innerText = `Następny kod: ${currentTarget}`;
+  targetInfo.innerHTML = `Następny kod: <span class="next-code">${currentTarget}</span>`;
   updateHistory();
 }
 
@@ -112,14 +143,15 @@ function selectTask(task) {
   taskSelect.style.display = "none";
 
   if(task === "QUIZ") {
+    status.innerText = "QUIZ";
     generateQuiz();
   } 
   else if(task === "MIX") {
-    status.innerText = "Utrudnienie MIX – skanuj zmodyfikowany kod.";
+    status.innerText = "Utrudnienie MIX";
     startScanPhase();
   }
   else {
-    status.innerText = "Pomięto zadanie – skanuj kod.";
+    status.innerText = "SKANUJ KOD QR.";
     startScanPhase();
   }
 }
@@ -208,6 +240,8 @@ if(code === expectedCode) {
   clearInterval(countdownInterval);
   points++;
   pointsEl.innerText = points;
+
+  status.className = "";   // zerowanie wszystkich klas
   status.innerText = "DOBRZE!";
 
   if(points >= 5) {
@@ -221,11 +255,16 @@ if(code === expectedCode) {
   // 🔒 zamykamy lokalny etap MIX
   currentTask = null;
 
+  //status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
+  //handleFail(true);
   status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
+  status.className = "red";
   handleFail(true);
 
 } else {
+  //status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
+  status.className = "red";
 }
 }
 /* ===================== CZAS ===================== */
@@ -270,7 +309,9 @@ function handleFail() {
 
   updateHistory();
   targetInfo.innerText = `Powtórz kod: ${currentTarget}`;
-  status.innerText = "Cofnięcie – zeskanuj ponownie";
+  //status.innerText = "Cofnięcie – zeskanuj ponownie";
+  status.innerHTML = `Cofnięcie !!! SKANUJ &gt; <span class="scan-code">${currentTarget}</span> &lt;`;
+  status.className = "blink green";
 
   // ❗ KLUCZOWA ZMIANA
   startScanPhase();   // ✅ ZAWSZE WRACAMY DO SKANU
@@ -282,7 +323,8 @@ function endGame(msg) {
   gameState = "FINISHED";
   document.getElementById("screen-game").style.display = "none";
   document.getElementById("screen-end").style.display = "block";
-  document.getElementById("endMessage").innerText = msg;
+  //document.getElementById("endMessage").innerText = msg;
+  document.getElementById("endMessage").innerHTML = `<span class="red">${msg}</span>`;
   if(html5QrCode) html5QrCode.stop();
   clearInterval(countdownInterval);
 }
@@ -310,6 +352,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
