@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -20,7 +22,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.4.3</h1>
+<h1>Mini gra QR - 9.4.1</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -44,7 +46,6 @@
   <button onclick="selectTask('SCAN_ONLY')">SKAN</button>
   <button onclick="selectTask('MIX')">MIX</button>
   <button onclick="selectTask('TIME')">CZAS</button>
-  <button onclick="selectTask('BLOCK')">BLOKADA</button>
 </div>
 
 <div id="screen-end" style="display:none;">
@@ -62,9 +63,9 @@ let countdownInterval;
 let html5QrCode;
 let currentTask = null;
 let timeBonus = 0;
-let scanBlocked = false;
 
 /* ELEMENTY */
+const startBtn = document.getElementById("startBtn");
 const targetInfo = document.getElementById("targetInfo");
 const status = document.getElementById("status");
 const timerInfo = document.getElementById("timerInfo");
@@ -76,27 +77,25 @@ const taskSelect = document.getElementById("taskSelect");
 
 /* HISTORIA */
 function updateHistory() {
-  const visible = previousTargets.slice(0, -1);
-  historyInfo.innerText = "Historia: " + visible.join(" → ");
+  const visibleHistory = previousTargets.slice(0, -1);
+  historyInfo.innerText = "Historia: " + visibleHistory.join(" → ");
 }
 
-/* LOSOWANIE */
+/* LOSOWANIE KODU */
 function pickNextTarget() {
   const available = CODES.filter(c => c !== currentTarget);
   currentTarget = available[Math.floor(Math.random() * available.length)];
   previousTargets.push(currentTarget);
-  targetInfo.innerHTML = `KOD DO ZESKANOWANIA: <span class="green big">${currentTarget}</span>`;
+  targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
   updateHistory();
 }
 
 /* WYBÓR ZADANIA */
 function showTaskSelect() {
-  currentTask = null;
-  timeBonus = 0;
-  scanBlocked = false;
-  taskSelect.style.display = "block";
-  reader.style.display = "none";
+  gameState = "TASK_SELECT";
   quizBox.innerHTML = "";
+  reader.style.display = "none";
+  taskSelect.style.display = "block";
   status.innerText = "";
   timerInfo.innerText = "";
 }
@@ -104,42 +103,77 @@ function showTaskSelect() {
 function selectTask(task) {
   currentTask = task;
   taskSelect.style.display = "none";
-
+  
   if(task === "QUIZ") {
+    status.className = "";
     status.innerText = "QUIZ";
     generateQuiz();
+  } 
+  else if(task === "MIX") {
+    status.className = "";
+    status.innerText = "Utrudnienie MIX";
+    startScanPhase();
   }
-
-  if(task === "TIME") {
+  else if(task === "TIME") {
+    status.className = "";
+    // losowo +2 lub -2 s
     timeBonus = Math.random() < 0.5 ? 2 : -2;
-    status.innerText = `CZAS: ${timeBonus > 0 ? "+" : ""}${timeBonus}s`;
+    const sign = timeBonus > 0 ? "+" : "";
+    status.innerText = `Bonus czasowy: ${sign}${timeBonus}s`;
     startScanPhase();
   }
+  else {
+    status.className = "";
+    status.innerText = "SKANUJ KOD QR.";
+    startScanPhase();
+  }
+}
 
-  if(task === "BLOCK") {
-    status.innerText = "BLOKADA SKANERA – 3 SEKUNDY";
-    startScanPhase();
-    activateScanBlock();
-  }
-
-  if(task === "MIX") {
-    status.innerText = "UTRUDNIENIE MIX";
-    startScanPhase();
-  }
-
-  if(task === "SCAN_ONLY") {
-    status.innerText = "SKANUJ KOD";
-    startScanPhase();
-  }
+/* UTRUDNIENIE MIX */
+function resolveExpectedCode(task, target) {
+  if(task !== "MIX") return target;
+  const index = CODES.indexOf(target);
+  return CODES[(index + 1) % CODES.length];
 }
 
 /* QUIZ */
 function generateQuiz() {
-  quizBox.innerHTML = `<button onclick="startScanPhase()">OK</button>`;
+  gameState = "QUIZ";
+  reader.style.display = "none";
+  quizBox.innerHTML = "";
+  timerInfo.innerText = "";
+  const a = rand();
+  const b = rand();
+  const c = rand();
+  const d = rand();
+  const op1 = randOp();
+  const op2 = randOp();
+  const left = evalSafe(a, op1, b);
+  const right = evalSafe(c, op2, d);
+  const correct = left > right ? ">" : "<";
+  quizBox.innerHTML = `
+    <p class="big">${a} ${op1} ${b} ? ${c} ${op2} ${d}</p>
+    <button onclick="quizAnswer('>','${correct}')">&gt;</button>
+    <button onclick="quizAnswer('<','${correct}')">&lt;</button>
+  `;
+}
+
+function quizAnswer(answer, correct) {
+  if(answer === correct) {
+    status.className = "";
+    status.innerText = "Dobrze! Skanuj kod.";
+    startScanPhase();
+  } else {
+    status.className = "red";
+    status.innerText = "Błąd w quizie – cofanie";
+    handleFail();
+  }
 }
 
 /* SKAN */
 function startScanPhase() {
+  gameState = "SCAN";
+  quizBox.innerHTML = "";
   reader.style.display = "block";
   startCountdown();
 
@@ -155,18 +189,31 @@ function startScanPhase() {
 }
 
 function onScan(text) {
-  if(scanBlocked) return;
-
+  if(gameState !== "SCAN") return;
   const url = new URL(text, window.location.href);
   const code = url.searchParams.get("code");
+  const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
-  if(code === currentTarget) {
+  if(code === expectedCode) {
+    const wasMix = currentTask === "MIX";
+    currentTask = null;
     clearInterval(countdownInterval);
     points++;
     pointsEl.innerText = points;
-    resetTimeBonus();
-    pickNextTarget();
-    showTaskSelect();
+    status.className = "";
+    status.innerText = "DOBRZE!";
+    if(points >= 5) endGame("Wygrana! 5 punktów");
+    else { pickNextTarget(); showTaskSelect(); }
+  } 
+  else if(currentTask === "MIX") {
+    currentTask = null;
+    status.className = "red";
+    status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
+    handleFail();
+  } 
+  else {
+    status.className = "red";
+    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
 }
 
@@ -181,43 +228,61 @@ function startCountdown() {
     timerInfo.innerText = `Czas: ${countdown}s`;
     if(countdown <= 0) {
       clearInterval(countdownInterval);
-      resetTimeBonus();
+      if(currentTask === "MIX") currentTask = null;
       handleFail();
     }
   },1000);
 }
 
-function resetTimeBonus() {
-  timeBonus = 0;
-}
-
-/* BLOKADA */
-function activateScanBlock() {
-  scanBlocked = true;
-  setTimeout(() => {
-    scanBlocked = false;
-    status.innerText = "SKANER AKTYWNY";
-  }, 3000);
-}
-
 /* COFANIE */
 function handleFail() {
+  clearInterval(countdownInterval);
+  if(previousTargets.length <= 1) {
+    status.className = "red";
+    endGame("Porażka – brak punktów");
+    return;
+  }
   previousTargets.pop();
   currentTarget = previousTargets[previousTargets.length - 1];
-  points = Math.max(0, points - 1);
+  if(points > 0) points--;
   pointsEl.innerText = points;
-  targetInfo.innerHTML = `KOD DO ZESKANOWANIA: <span class="green big">${currentTarget}</span>`;
+  updateHistory();
+  targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
+  status.className = "green blink";
+  status.innerText = `Cofnięcie !!! SKANUJ > ${currentTarget}`;
   startScanPhase();
 }
 
+/* KONIEC */
+function endGame(msg) {
+  gameState = "FINISHED";
+  document.getElementById("screen-game").style.display = "none";
+  document.getElementById("screen-end").style.display = "block";
+  document.getElementById("endMessage").className = "red";
+  document.getElementById("endMessage").innerText = msg;
+  if(html5QrCode) html5QrCode.stop();
+  clearInterval(countdownInterval);
+}
+
 /* START */
-document.getElementById("startBtn").onclick = () => {
+startBtn.onclick = () => {
   document.getElementById("screen-init").style.display = "none";
   document.getElementById("screen-game").style.display = "block";
   pickNextTarget();
   showTaskSelect();
 };
+
+/* NARZĘDZIA */
+function rand() { return Math.floor(Math.random()*9)+1; }
+function randOp() { return ["+","-","*","/"][Math.floor(Math.random()*4)]; }
+function evalSafe(a,op,b) {
+  if(op==="/") return a/b;
+  if(op==="*") return a*b;
+  if(op==="+") return a+b;
+  return a-b;
+}
 </script>
 
 </body>
 </html>
+
