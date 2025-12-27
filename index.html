@@ -11,16 +11,9 @@
   button { padding: 10px 18px; font-size: 18px; margin: 5px; }
   .info { margin-top: 10px; font-weight: bold; font-size: 18px; }
   .big { font-size: 22px; }
-
-  /* Nowe klasy wizualne */
-  .greenBig { color: green; font-size: 26px; font-weight: bold; }
-  .greenBlink {
-    color: green;
-    font-weight: bold;
-    animation: blink 1s infinite;
-  }
+  .greenBig { color: green; font-size: 28px; font-weight: bold; }
+  .greenBlink { color: green; font-weight: bold; animation: blink 1s infinite; }
   .redText { color: red; font-weight: bold; }
-
   @keyframes blink {
     0%, 50%, 100% { opacity: 1; }
     25%, 75% { opacity: 0; }
@@ -30,7 +23,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.3.9</h1>
+<h1>Mini gra QR - 9.3.2</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -102,7 +95,7 @@ function pickNextTarget() {
   currentTarget = available[Math.floor(Math.random() * available.length)];
   previousTargets.push(currentTarget);
 
-  // literka w zielonej dużej czcionce
+  // zawsze pokazuje kod do zeskanowania
   targetInfo.innerHTML = `Następny kod: <span class="greenBig">${currentTarget}</span>`;
   updateHistory();
 }
@@ -124,9 +117,6 @@ function selectTask(task) {
   currentTask = task;
   taskSelect.style.display = "none";
 
-  // czyścimy klasy statusu
-  status.className = "info";
-
   if(task === "QUIZ") {
     status.innerText = "QUIZ";
     generateQuiz();
@@ -145,7 +135,6 @@ function selectTask(task) {
 
 function resolveExpectedCode(task, target) {
   if(task !== "MIX") return target;
-
   const index = CODES.indexOf(target);
   const nextIndex = (index + 1) % CODES.length;
   return CODES[nextIndex];
@@ -181,8 +170,8 @@ function generateQuiz() {
 
 function quizAnswer(answer, correct) {
   if(answer === correct) {
-    status.className = "info"; // usuń poprzednie klasy
-    status.innerText = "DOBRZE! Skanuj kod.";
+    status.className = "info"; // reset klas
+    status.innerText = "Dobrze! Skanuj kod.";
     startScanPhase();
   } else {
     status.className = "info redText";
@@ -219,16 +208,11 @@ function onScan(text) {
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
   if(code === expectedCode) {
-
-    const wasMix = currentTask === "MIX";
     currentTask = null;
-
     clearInterval(countdownInterval);
     points++;
     pointsEl.innerText = points;
-
-    // pozytywny komunikat
-    status.className = "info";
+    status.className = "info"; // reset klas
     status.innerText = "DOBRZE!";
 
     if(points >= 5) {
@@ -239,16 +223,14 @@ function onScan(text) {
     }
 
   } else if(currentTask === "MIX") {
-
     currentTask = null;
-
     status.className = "info redText";
-    status.innerHTML = `Zły kod! Wracasz do poprzedniego skanu`;
+    status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
     handleFail(true);
 
   } else {
     status.className = "info redText";
-    status.innerHTML = `Niepoprawny kod – spróbuj jeszcze raz`;
+    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
 }
 
@@ -264,11 +246,7 @@ function startCountdown() {
     timerInfo.innerText = `Czas: ${countdown}s`;
     if(countdown <= 0) {
       clearInterval(countdownInterval);
-
-      if (currentTask === "MIX") {
-        currentTask = null; // ZAMKNIĘCIE MIX PRZY TIMEOUT
-      }
-
+      if (currentTask === "MIX") currentTask = null;
       handleFail();
     }
   },1000);
@@ -292,17 +270,12 @@ function handleFail() {
 
   updateHistory();
 
-  // mrygający komunikat
- // status.className = "info greenBlink";
-//  status.innerHTML = `Cofnięcie !!! SKANUJ &gt; ${currentTarget}`;
-
- // ❗ targetInfo pokazuje zawsze kod do zeskanowania
+  // zawsze pokazuje kod do zeskanowania
   targetInfo.innerHTML = `Następny kod: <span class="greenBig">${currentTarget}</span>`;
 
-  // migający status dla cofnięcia
-  status.innerHTML = `<span class="greenBlink">Cofnięcie !!! SKANUJ > ${currentTarget}</span>`;
-
-  
+  // migający tekst przy cofnięciu
+  status.className = "info greenBlink";
+  status.innerHTML = `Cofnięcie !!! SKANUJ > ${currentTarget}`;
 
   startScanPhase();
 }
@@ -341,4 +314,3 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
-
