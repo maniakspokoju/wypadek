@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.8</h1>
+<h1>Mini gra QR - 9.5.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -275,7 +275,7 @@ function activateScanBlock() {
   scanBlocked = true;
 
   // informacja wizualna (opcjonalna, ale testowo bardzo pomocna)
-  status.className = "green";
+  status.className = "blue";
   status.innerText = "BLOKADA AKTYWNA – SKANER NIE CZYTA";
 
   blockTimeout = setTimeout(() => {
@@ -331,7 +331,7 @@ function endGame(msg) {
   gameState = "FINISHED";
   document.getElementById("screen-game").style.display = "none";
   document.getElementById("screen-end").style.display = "block";
-  document.getElementById("endMessage").className = "red";
+  document.getElementById("endMessage").className = "green";
   document.getElementById("endMessage").innerText = msg;
   if(html5QrCode) html5QrCode.stop();
   clearInterval(countdownInterval);
@@ -358,6 +358,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
