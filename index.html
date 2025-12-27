@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.2.1</h1>
+<h1>Mini gra QR - 9.2.2</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -38,6 +38,7 @@
   <p class="info big">Wybierz zadanie:</p>
   <button onclick="selectTask('QUIZ')">QUIZ</button>
   <button onclick="selectTask('SCAN_ONLY')">TYLKO SKAN</button>
+  <button onclick="selectTask('MIX')">UTRUDNIENIE – MIX</button>
 </div>
 
 <div id="screen-end" style="display:none;">
@@ -109,12 +110,27 @@ function selectTask(task) {
 
   if(task === "QUIZ") {
     generateQuiz();
-  } else {
+  } 
+  else if(task === "MIX") {
+    status.innerText = "Utrudnienie MIX – skanuj zmodyfikowany kod.";
+    startScanPhase();
+  }
+  else {
     status.innerText = "Pomięto zadanie – skanuj kod.";
     startScanPhase();
   }
 }
 
+/* ================== UTRUDNIENIE MIX – ROTACJA KODÓW ================== */
+
+function resolveExpectedCode(task, target) {
+  if(task !== "MIX") return target;
+
+  const index = CODES.indexOf(target);
+  const nextIndex = (index + 1) % CODES.length;
+  return CODES[nextIndex];
+}
+  
 /* ===================== QUIZ ===================== */
 
 function generateQuiz() {
@@ -178,7 +194,9 @@ function onScan(text) {
   const url = new URL(text, window.location.href);
   const code = url.searchParams.get("code");
 
-  if(code === currentTarget) {
+  const expectedCode = resolveExpectedCode(currentTask, currentTarget);
+  if(code === expectedCode) {
+    
     clearInterval(countdownInterval);
     points++;
     pointsEl.innerText = points;
@@ -189,6 +207,10 @@ function onScan(text) {
     } else {
       pickNextTarget();
       showTaskSelect();
+    }
+  } else {                                          //zmiana >
+    status.innerText = "Zły kod!";
+    handleFail();                                       //zmiana <
     }
   }
 }
@@ -270,6 +292,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
