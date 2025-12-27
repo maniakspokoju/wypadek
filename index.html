@@ -16,7 +16,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.2.3</h1>
+<h1>Mini gra QR - 9.2.4</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -82,6 +82,10 @@ const reader = document.getElementById("reader");
 
 const taskSelect = document.getElementById("taskSelect");
 
+
+  console.log('taskSelect =', taskSelect);                        //zmiana
+
+  
 /* ===================== HISTORIA ===================== */
 
 function updateHistory() {
@@ -302,6 +306,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
