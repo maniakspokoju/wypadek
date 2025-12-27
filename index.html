@@ -28,7 +28,7 @@
 </head>
 
 <body>
-<h1>Mini gra QR - 9.5.8</h1>
+<h1>Mini gra QR - 9.5.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -307,8 +307,17 @@ function handleFail() {
   pointsEl.innerText = points;
   updateHistory();
   targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
+
   status.className = "green blink";
   status.innerText = `Cofnięcie !!! SKANUJ > ${currentTarget}`;
+
+  // Reset i restart timera jeśli cofamy się do QUIZ
+  if(currentTask === "QUIZ") {
+    startTaskCountdown(() => {
+      showScanResult(false, handleFail);
+    });
+  }
+
   startScanPhase();
 }
 
@@ -344,3 +353,4 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
