@@ -38,7 +38,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.8</h1>
+<h1>Mini gra QR - 9.5.9</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -74,6 +74,7 @@ let currentTask = null;
 let timeBonus = 0;
 let scanBlocked = false;
 let blockTimeout = null;
+let quizTimerInterval;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
@@ -175,22 +176,22 @@ function generateQuiz() {
     <button onclick="quizAnswer('<','${correct}')">&lt;</button>
   `;
 
-  startQuizScanCountdown(); // uruchom timer 5 sekund dla całej sekwencji quiz + skan
+   // start timer 5 sekund obejmujący quiz + skan
+  startQuizTimer();
 }
 
  /* CZAS FAZY QUIZU */
-function startQuizScanCountdown() {
-  clearInterval(countdownInterval);
-  countdown = 5; // całkowity czas na quiz + skan
+function startQuizTimer() {
+  clearInterval(quizTimerInterval);
+  countdown = 5; // 5 sekund dla całego QUIZ + skan
   timerInfo.innerText = `Czas: ${countdown}s`;
 
-  countdownInterval = setInterval(() => {
+  quizTimerInterval = setInterval(() => {
     countdown--;
     timerInfo.innerText = `Czas: ${countdown}s`;
 
     if(countdown <= 0) {
-      clearInterval(countdownInterval);
-      timerInfo.innerText = `Czas minął!`;
+      clearInterval(quizTimerInterval);
       status.className = "red";
       status.innerText = "Przekroczono limit czasu – cofanie";
       handleFail();
@@ -250,11 +251,13 @@ function onScan(text) {
     status.innerText = "DOBRZE!";
 
     showScanResult(true, () => {
-        if(points >= 5) endGame("Wygrana! 5 punktów");
-        else {
-            pickNextTarget();
-            startRandomTask();
-        }
+if(points >= 5) {
+    endGame("Wygrana! 5 punktów");
+} else {
+    clearInterval(quizTimerInterval); // zatrzymanie wspólnego timera dla QUIZ
+    pickNextTarget();
+    startRandomTask();
+}
     });
 
   } else if(currentTask === "MIX") {
@@ -382,6 +385,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
