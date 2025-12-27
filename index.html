@@ -22,7 +22,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.4.4</h1>
+<h1>Mini gra QR - 9.4.5</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -211,6 +211,9 @@ function onScan(text) {
     const wasMix = currentTask === "MIX";
     currentTask = null;
     clearInterval(countdownInterval);
+
+    timeBonus = 0;
+    
     points++;
     pointsEl.innerText = points;
     status.className = "";
@@ -241,6 +244,9 @@ function startCountdown() {
     timerInfo.innerText = `Czas: ${countdown}s`;
     if(countdown <= 0) {
       clearInterval(countdownInterval);
+      
+      timeBonus = 0;
+      
       if(currentTask === "MIX") currentTask = null;
       handleFail();
     }
@@ -265,6 +271,9 @@ function activateScanBlock() {
 
 /* COFANIE */
 function handleFail() {
+
+  timeBonus = 0;
+  
   clearInterval(countdownInterval);
   if(previousTargets.length <= 1) {
     status.className = "red";
@@ -314,5 +323,6 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
