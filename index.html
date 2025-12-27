@@ -22,7 +22,7 @@
 
 <body>
 
-<h1>Mini gra QR - 9.5.0</h1>
+<h1>Mini gra QR - 9.5.1</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -93,7 +93,6 @@ function startRandomTask() {
 
 function selectTask(task) {
   currentTask = task;
-  taskSelect.style.display = "none";
   
   if(task === "QUIZ") {
     status.className = "";
@@ -320,6 +319,7 @@ function evalSafe(a,op,b) {
 
 </body>
 </html>
+
 
 
 
