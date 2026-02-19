@@ -27,7 +27,7 @@
 </head>
 
 <body>
-<h1>Mini gra QR - 9.5.9</h1>
+<h1>Mini gra QR - 9.6.0</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -140,7 +140,6 @@ function resolveExpectedCode(task, target) {
 /* QUIZ */
 function generateQuiz() {
   gameState = "QUIZ";
-  reader.style.display = "none";
   quizBox.innerHTML = "";
   timerInfo.innerText = "";
 
@@ -197,16 +196,25 @@ function startScanPhase() {
 
 function onScan(text) {
 
-const now = Date.now();
-if(now - lastScanTime < 800) return;
-lastScanTime = now;
+  const now = Date.now();
+  if(now - lastScanTime < 800) return;
+  lastScanTime = now;
 
+  if(gameState !== "SCAN") return;
+  if(scanBlocked) return;
 
-  if(gameState !== "SCAN") return;   // ❗ nie można skanować podczas quizu
-  if(scanBlocked) return;            // ❗ blokada aktywna
+  let code = text;
 
-  const code = text;
+  if(text.includes("code=")) {
+    const url = new URL(text, window.location.href);
+    code = url.searchParams.get("code");
+  }
+
+  code = code.toUpperCase().trim();
+
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
+
+  console.log("SCAN:", code, "OCZEKIWANY:", expectedCode);
 
   if(code === expectedCode) {
 
@@ -276,21 +284,27 @@ function activateScanBlock() {
 
 /* WYNIK SKANU */
 function showScanResult(success, callback) {
-  scanBlocked = true;
 
-  reader.style.display = "none";
+  scanBlocked = true;
+  gameState = "LOCKED";   // 🔥 NOWE – blokada całej gry
+
   scanResult.style.display = "flex";
 
   scanResult.className = success ? "success" : "fail";
   scanResult.innerText = success ? "SUKCES" : "PORAŻKA";
 
   setTimeout(() => {
+
     scanResult.style.display = "none";
-    reader.style.display = "block";
+
     scanBlocked = false;
+    gameState = "SCAN";   // 🔥 przywrócenie stanu
+
     if (callback) callback();
+
   }, 1000);
 }
+
 
 /* COFANIE */
 function handleFail() {
@@ -379,34 +393,7 @@ function evalSafe(a,op,b) {
   return a-b;
 }
 
-/* ================= NFC ================= */
 
-if ('NDEFReader' in window) {
-  const nfcReader = new NDEFReader();
-
-  async function startNFC() {
-    try {
-      await nfcReader.scan();
-      console.log("NFC ready");
-
-      nfcReader.onreading = event => {
-        const decoder = new TextDecoder();
-        const record = event.message.records[0];
-        const text = decoder.decode(record.data).trim();
-
-        console.log("Odczyt NFC:", text);
-        onScan(text); // ← wywołuje Twoją funkcję gry
-      };
-
-    } catch (error) {
-      console.log("Błąd NFC:", error);
-    }
-  }
-
-
-} else {
-  console.log("Twoja przeglądarka nie obsługuje NFC");
-}
 </script>
 
 
