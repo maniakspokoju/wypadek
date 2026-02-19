@@ -61,6 +61,8 @@ let scanBlocked = false;
 let blockTimeout = null;
 let taskCountdown = 5;
 let taskCountdownInterval;
+let lastScanTime = 0;
+
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
@@ -179,25 +181,35 @@ function quizAnswer(answer, correct) {
 
 /* SKAN */
 function startScanPhase() {
+
   gameState = "SCAN";
   quizBox.innerHTML = "";
 
-  // Timer dla QUIZ już działa, dla innych faz startujemy osobno
-  if(currentTask !== "QUIZ") startTaskCountdown(() => {
-      showScanResult(false, handleFail);
-  });
+  if(currentTask !== "QUIZ") {
+    startTaskCountdown(() => {
+        showScanResult(false, handleFail);
+    });
+  }
 }
 
 
-function onScan(text) {
-  if(gameState !== "SCAN") return;
-  if(scanBlocked) return;
 
-  const code = text; // NFC odczytuje dokładnie literę lub START
+
+function onScan(text) {
+
+const now = Date.now();
+if(now - lastScanTime < 800) return;
+lastScanTime = now;
+
+
+  if(gameState !== "SCAN") return;   // ❗ nie można skanować podczas quizu
+  if(scanBlocked) return;            // ❗ blokada aktywna
+
+  const code = text;
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
   if(code === expectedCode) {
-    // poprawny kod
+
     currentTask = null;
     clearInterval(taskCountdownInterval);
     timeBonus = 0;
@@ -217,12 +229,14 @@ function onScan(text) {
     });
 
   } else if(currentTask === "MIX") {
+
     currentTask = null;
     status.className = "red";
     status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
     showScanResult(false, handleFail);
 
   } else {
+
     status.className = "red";
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
@@ -330,12 +344,16 @@ startBtn.onclick = async () => {
       await nfcReader.scan();
 
       nfcReader.onreading = event => {
-        const decoder = new TextDecoder();
-        const record = event.message.records[0];
-        const text = decoder.decode(record.data).trim();
-        console.log("NFC:", text);
-        onScan(text);
-      };
+  const decoder = new TextDecoder();
+  const record = event.message.records[0];
+
+  let text = decoder.decode(record.data);
+  text = text.replace(/\u0000/g, "").trim().toUpperCase();
+
+  console.log("NFC RAW:", text);
+  onScan(text);
+};
+
 
       console.log("NFC aktywne");
 
