@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Mini gra QR – quiz + skan</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
  body { font-family: Arial, sans-serif; padding: 20px; }
@@ -43,7 +42,6 @@
   <p class="info">Punkty: <span id="points">0</span></p>
 
   <div id="quizBox"></div>
-  <div id="reader"></div>
   <div id="scanResult" style="display:none;"></div>
 </div>
 
@@ -57,7 +55,6 @@ let gameState = "INIT";
 let currentTarget = null;
 let previousTargets = [];
 let points = 0;
-let html5QrCode;
 let currentTask = null;
 let timeBonus = 0;
 let scanBlocked = false;
@@ -184,33 +181,23 @@ function quizAnswer(answer, correct) {
 function startScanPhase() {
   gameState = "SCAN";
   quizBox.innerHTML = "";
-  reader.style.display = "block";
 
   // Timer dla QUIZ już działa, dla innych faz startujemy osobno
   if(currentTask !== "QUIZ") startTaskCountdown(() => {
       showScanResult(false, handleFail);
   });
-
-  if(!html5QrCode) {
-    html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
-      onScan,
-      ()=>{}
-    );
-  }
 }
+
 
 function onScan(text) {
   if(gameState !== "SCAN") return;
   if(scanBlocked) return;
 
-  const url = new URL(text, window.location.href);
-  const code = url.searchParams.get("code");
+  const code = text; // NFC odczytuje dokładnie literę lub START
   const expectedCode = resolveExpectedCode(currentTask, currentTarget);
 
   if(code === expectedCode) {
+    // poprawny kod
     currentTask = null;
     clearInterval(taskCountdownInterval);
     timeBonus = 0;
@@ -240,6 +227,7 @@ function onScan(text) {
     status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
 }
+
 
 /* TIMER ZADANIA */
 function startTaskCountdown(callback) {
@@ -349,8 +337,38 @@ function evalSafe(a,op,b) {
   if(op==="+") return a+b;
   return a-b;
 }
+
+/* ================= NFC ================= */
+
+if ('NDEFReader' in window) {
+  const nfcReader = new NDEFReader();
+
+  async function startNFC() {
+    try {
+      await nfcReader.scan();
+      console.log("NFC ready");
+
+      nfcReader.onreading = event => {
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        const text = decoder.decode(record.data).trim();
+
+        console.log("Odczyt NFC:", text);
+        onScan(text); // ← wywołuje Twoją funkcję gry
+      };
+
+    } catch (error) {
+      console.log("Błąd NFC:", error);
+    }
+  }
+
+  startNFC();
+
+} else {
+  console.log("Twoja przeglądarka nie obsługuje NFC");
+}
 </script>
+
 
 </body>
 </html>
-
