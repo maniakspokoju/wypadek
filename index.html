@@ -321,12 +321,35 @@ function endGame(msg) {
 }
 
 /* START */
-startBtn.onclick = () => {
+startBtn.onclick = async () => {
+
+  // uruchom NFC dopiero po kliknięciu
+  if ('NDEFReader' in window) {
+    try {
+      const nfcReader = new NDEFReader();
+      await nfcReader.scan();
+
+      nfcReader.onreading = event => {
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        const text = decoder.decode(record.data).trim();
+        console.log("NFC:", text);
+        onScan(text);
+      };
+
+      console.log("NFC aktywne");
+
+    } catch (error) {
+      console.log("Błąd NFC:", error);
+    }
+  }
+
   document.getElementById("screen-init").style.display = "none";
   document.getElementById("screen-game").style.display = "block";
   pickNextTarget();
   startRandomTask();
 };
+
 
 /* NARZĘDZIA */
 function rand() { return Math.floor(Math.random()*9)+1; }
@@ -362,7 +385,6 @@ if ('NDEFReader' in window) {
     }
   }
 
-  startNFC();
 
 } else {
   console.log("Twoja przeglądarka nie obsługuje NFC");
