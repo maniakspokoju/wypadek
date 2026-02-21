@@ -39,9 +39,9 @@ button:active { background: #0056b3; }
 #pointsClock { display:flex; justify-content:space-between; font-size: 28px; padding: 0 20px; }
 
 
-#screen-game { display:none; text-align:center; }
 #overlayMessage {
   display: none;
+  text-align:center; 
   font-size: 48px;  /* mniejsza niż litera i timer */
   font-weight: bold;
   color: white;
@@ -59,7 +59,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-															<h1>Mini gra QR – 9.7.7</h1>
+																																			<h1>Mini gra QR – 9.7.8</h1>
 
 <div id="screen-init">
   <button id="startBtn">START</button>
@@ -127,7 +127,6 @@ function updateDisplay() {
   targetLetter.innerText = currentTarget;
   timerInfo.innerText = `Czas: ${timeLeft}s`;
   pointsEl.innerText = points;
-  gameClockEl.innerText = gameClockEl.innerText; // nie ruszamy
 }
 
 function startTimer() {
@@ -142,110 +141,105 @@ function startTimer() {
       clearInterval(timerInterval);
       lockGame();
     }
-  }, 1000);
+  },1000);
 }
 
 function lockGame() {
   isLocked = true;
   document.body.classList.add("locked");
-  overlay.style.display = "flex";
-  overlay.innerText = "BLOKADA";
-  if (navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
+  overlay.style.display="flex";
+  overlay.innerText="BLOKADA";
+  if(navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
 }
 
 function unlockGame() {
   if(!isLocked) return;
   isLocked = false;
   document.body.classList.remove("locked");
-  overlay.style.display = "none";
+  overlay.style.display="none";
   startTimer();
 }
 
-function flashScreen(type, message) {
-  overlay.style.display = "flex";
-  overlay.innerText = message;
+function flashScreen(type,message) {
+  overlay.style.display="flex";
+  overlay.innerText=message;
 
-  if(type === "success") document.body.classList.add("flash-success");
-  if(type === "error") document.body.classList.add("flash-error");
+  if(type==="success") document.body.classList.add("flash-success");
+  if(type==="error") document.body.classList.add("flash-error");
 
-  setTimeout(() => {
+  setTimeout(()=> {
     document.body.classList.remove("flash-success");
     document.body.classList.remove("flash-error");
-    if(!isLocked) overlay.style.display = "none";
-  }, 800);
+    if(!isLocked) overlay.style.display="none";
+  },1000); // 🔥 wydłużony czas wyświetlania
 }
 
-/* SKAN */
 function onScan(text) {
   if(gameFinished) return;
 
-  let code = text.toUpperCase().trim();
+  const code = text.toUpperCase().trim();
 
   if(isLocked) {
-    if(code === "UNLOCK") {
-      unlockGame();
-    }
+    if(code==="UNLOCK") unlockGame();
     return;
   }
 
-  if(code === currentTarget) {
-
-    clearInterval(timerInterval); // 🔥 zatrzymanie starego timera
-
-    history.push(currentTarget);
-    updateHistory();
+  if(code===currentTarget) {
+    // 🔥 zatrzymanie licznika natychmiast po prawidłowym skanie
+    clearInterval(timerInterval);
 
     points++;
-    pointsEl.innerText = points;
+    history.push(currentTarget);
+    updateDisplay();
 
-    flashScreen("success", "SUKCES");
+    flashScreen("success","SUKCES");
 
-    if(points >= 5) {
-      setTimeout(() => {
-        gameFinished = true;
-        clearInterval(timerInterval);
-        clearInterval(gameClockInterval);
-        overlay.style.display = "flex";
-        overlay.innerText = "WYGRANA!\nCzas: " + 
-          document.getElementById("gameClock").innerText +
-          "\nTrasa: " + history.join(" → ");
-      }, 400);
+    if(points>=5) {
+      gameFinished=true;
+      clearInterval(timerInterval);
+      clearInterval(gameClockInterval);
+      setTimeout(()=> {
+        screenGame.style.display="none";
+        screenEnd.style.display="block";
+        endMessage.innerText=`WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+        endRoute.innerText="Trasa: "+history.join(" → ");
+      },1000);
       return;
     }
 
-    setTimeout(() => {
+    setTimeout(()=> {
       moveToNextTarget();
-      startTimer();  // 🔥 start nowego odliczania dla kolejnej litery
-    }, 400);
+      startTimer(); // 🔥 reset nowego 5-sekundowego timera
+    },1000);
 
   } else {
-    flashScreen("error", "BŁĘDNY KOD");
+    flashScreen("error","BŁĘDNY KOD");
   }
 }
+
 function startGameClock() {
   gameStartTime = Date.now();
   gameClockInterval = setInterval(() => {
-    const elapsed = Date.now() - gameStartTime;
+    const elapsed = Date.now()-gameStartTime;
     const minutes = Math.floor(elapsed/60000);
     const seconds = Math.floor((elapsed/1000)%60);
-    gameClockEl.innerText = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+    gameClockEl.innerText=`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
   },200);
 }
 
 /* ===== START ===== */
 startBtn.onclick = async () => {
-  if ('NDEFReader' in window) {
-    try {
+  if('NDEFReader' in window){
+    try{
       const nfcReader = new NDEFReader();
       await nfcReader.scan();
-      nfcReader.onreading = event => {
+      nfcReader.onreading = event=>{
         const decoder = new TextDecoder();
         const record = event.message.records[0];
-        let text = decoder.decode(record.data);
-        text = text.replace(/\u0000/g,"").trim();
+        let text = decoder.decode(record.data).replace(/\u0000/g,"").trim();
         onScan(text);
       };
-    } catch(e) { console.log("Błąd NFC:",e); }
+    }catch(e){console.log("Błąd NFC:",e);}
   }
 
   screenInit.style.display="none";
