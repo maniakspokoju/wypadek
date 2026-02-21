@@ -40,13 +40,16 @@ button:active { background: #0056b3; }
 
 
 #overlayMessage {
-  position: relative;   /* lub absolute/fixed, jeśli chcesz nakładkę */
-  width: 100%;
-  text-align: center;
-  font-size: 48px;
+  position: fixed;        /* nakładka względem okna */
+  bottom: 20px;           /* 20px od dolnej krawędzi */
+  left: 50%;              /* środek poziomo */
+  transform: translateX(-50%);  /* dokładne wyśrodkowanie */
+  font-size: 48px;        /* duża czcionka */
   font-weight: bold;
   color: white;
-  margin: 10px auto;   /* automatyczne marginesy poziome */
+  text-align: center;
+  z-index: 1000;          /* żeby była nad wszystkim */
+  pointer-events: none;   /* kliknięcia przechodzą przez overlay */
 }
 
 .locked { background-color: #cc0000 !important; color: white !important; }
@@ -60,7 +63,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.5</h1>
+																																			<h1>Mini gra QR – 9.8.6</h1>
 
 <div id="screen-init">
   <label>
@@ -279,6 +282,7 @@ startBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
