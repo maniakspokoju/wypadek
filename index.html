@@ -77,10 +77,49 @@
  #scanResult.fail {
    color: #cc0000;
  }
+
+ /* 🔴 DODAJ TO NA KOŃCU */
+ .locked {
+   background-color: #cc0000 !important;
+   color: white;
+
+ }
+
+/* --- EFEKTY MIGANIA --- */
+
+.flash-success {
+  background-color: #00cc44 !important;
+  color: black !important;
+}
+
+.flash-error {
+  background-color: #ff4444 !important;
+  color: black !important;
+}
+
+.locked {
+  background-color: #cc0000 !important;
+  color: black !important;
+}
+
+/* Komunikat centralny */
+#overlayMessage {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  font-size: 48px;
+  font-weight: bold;
+  z-index: 999;
+}
 </style></head>
 
 <body>
-						<h1>Mini gra QR - 9.6.3</h1>
+						<h1>Mini gra QR - 9.6.5</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -96,6 +135,8 @@
 
   <div id="quizBox"></div>
   <div id="scanResult" style="display:none;"></div>
+  <div id="overlayMessage"></div>
+
 </div>
 
 <div id="screen-end" style="display:none;">
@@ -103,6 +144,9 @@
 </div>
 
 <script>
+
+const overlay = document.getElementById("overlayMessage");
+let history = [];
 const CODES = ["A","B","C"];
 let currentTarget = null;
 let points = 0;
@@ -145,8 +189,9 @@ function startTimer() {
 function lockGame() {
   isLocked = true;
   document.body.classList.add("locked");
-  status.className = "red";
-  status.innerText = " ";
+
+  overlay.style.display = "flex";
+  overlay.innerText = "BLOKADA";
 
   if (navigator.vibrate) {
     navigator.vibrate([200,100,200,100,400]);
@@ -159,7 +204,7 @@ function unlockGame() {
 
   isLocked = false;
   document.body.classList.remove("locked");
-  status.className = "";
+  overlay.style.display = "none";
   startTimer();
 }
 
@@ -177,17 +222,26 @@ function onScan(text) {
 
   if(code === currentTarget) {
 
+    history.push(currentTarget);
+    updateHistory();
+
     points++;
     pointsEl.innerText = points;
 
+    flashScreen("success", "SUKCES");
+
     if(points >= 5) {
-      endGame("Wygrana! 5 punktów");
+      setTimeout(() => endGame("Wygrana! 5 punktów"), 400);
       return;
     }
 
-    pickNextTarget();
-    startTimer();
+    setTimeout(() => {
+      pickNextTarget();
+      startTimer();
+    }, 400);
 
+  } else {
+    flashScreen("error", "BŁĘDNY KOD");
   }
 }
 
@@ -226,6 +280,31 @@ startBtn.onclick = async () => {
   pickNextTarget();
   startTimer();
 };
+
+function flashScreen(type, message) {
+
+  overlay.style.display = "flex";
+  overlay.innerText = message;
+
+  if(type === "success") {
+    document.body.classList.add("flash-success");
+  }
+
+  if(type === "error") {
+    document.body.classList.add("flash-error");
+  }
+
+  setTimeout(() => {
+    document.body.classList.remove("flash-success");
+    document.body.classList.remove("flash-error");
+    overlay.style.display = "none";
+  }, 400);
+}
+
+function updateHistory() {
+  document.getElementById("historyInfo").innerText =
+    "Historia: " + history.join(" → ");
+}
 </script>
 
 
