@@ -60,9 +60,19 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.3</h1>
+																																			<h1>Mini gra QR – 9.8.4</h1>
 
 <div id="screen-init">
+  <label>
+    Liczba punktów do zdobycia (3-7):
+    <input type="number" id="inputPoints" min="3" max="7" value="7">
+  </label>
+  <br><br>
+  <label>
+    Czas na zeskanowanie kolejnej litery w sekundach (3-60):
+    <input type="number" id="inputTime" min="3" max="60" value="10">
+  </label>
+  <br><br>
   <button id="startBtn">START</button>
 </div>
 
@@ -95,6 +105,8 @@ let timerInterval = null;
 let gameStartTime = null;
 let gameClockInterval = null;
 let gameFinished = false;
+let maxPoints = 7;    // domyślnie 7 punktów
+let scanTime = 10;    // domyślnie 10 sekund na literę
 
 const startBtn = document.getElementById("startBtn");
 const targetLetter = document.getElementById("targetLetter");
@@ -133,7 +145,7 @@ function updateDisplay() {
 
 function startTimer() {
   clearInterval(timerInterval);
-  timeLeft = 5;
+  timeLeft = scanTime;  // teraz czas z pola startowego
   timerInfo.innerText = `Czas: ${timeLeft}s`;
 
   timerInterval = setInterval(() => {
@@ -143,7 +155,7 @@ function startTimer() {
       clearInterval(timerInterval);
       lockGame();
     }
-  },1000);
+  }, 1000);
 }
 
 function lockGame() {
@@ -196,17 +208,17 @@ function onScan(text) {
 
     flashScreen("success","SUKCES");
 
-if(points>=7) {  // teraz 7 punktów do zdobycia
-    gameFinished=true;
-    clearInterval(timerInterval);
-    clearInterval(gameClockInterval);
-    setTimeout(()=> {
-        screenGame.style.display="none";
-        screenEnd.style.display="block";
-        endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-        endRoute.innerText = "Trasa: " + history.join(" → ");
-    },800);
-    return;
+if(points >= maxPoints) {
+  gameFinished = true;
+  clearInterval(timerInterval);
+  clearInterval(gameClockInterval);
+  setTimeout(()=> {
+    screenGame.style.display="none";
+    screenEnd.style.display="block";
+    endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+    endRoute.innerText = "Trasa: " + history.join(" → ");
+  },800);
+  return;
 }
 
     setTimeout(()=> {
@@ -231,21 +243,19 @@ function startGameClock() {
 
 /* ===== START ===== */
 startBtn.onclick = async () => {
-  if('NDEFReader' in window){
-    try{
-      const nfcReader = new NDEFReader();
-      await nfcReader.scan();
-      nfcReader.onreading = event=>{
-        const decoder = new TextDecoder();
-        const record = event.message.records[0];
-        let text = decoder.decode(record.data).replace(/\u0000/g,"").trim();
-        onScan(text);
-      };
-    }catch(e){console.log("Błąd NFC:",e);}
-  }
+  // Pobranie wartości z pól i konwersja na liczby
+  const pointsInput = parseInt(document.getElementById("inputPoints").value);
+  const timeInput = parseInt(document.getElementById("inputTime").value);
 
-  screenInit.style.display="none";
-  screenGame.style.display="block";
+  // Walidacja wartości
+  if(pointsInput >= 3 && pointsInput <= 7) maxPoints = pointsInput;
+  if(timeInput >= 3 && timeInput <= 60) scanTime = timeInput;
+
+  // Ukrycie ekranu startowego
+  screenInit.style.display = "none";
+  screenGame.style.display = "block";
+
+  // Start zegara i inicjalizacja gry
   startGameClock();
   initializeRoute();
   startTimer();
