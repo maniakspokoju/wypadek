@@ -29,7 +29,7 @@ button:active { background: #0056b3; }
 #screen-game { display:none; text-align:center; }
 
 #targetLetter {
-  font-size: 140px;
+  font-size: 200px;
   font-weight: bold;
   margin: 0;
   line-height: 1.2;
@@ -38,6 +38,8 @@ button:active { background: #0056b3; }
 #timerInfo { font-size: 72px; margin: 10px 0; }
 #pointsClock { display:flex; justify-content:space-between; font-size: 28px; padding: 0 20px; }
 
+
+#screen-game { display:none; text-align:center; }
 #overlayMessage {
   display: none;
   font-size: 48px;  /* mniejsza niż litera i timer */
@@ -57,7 +59,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-                                                                                                                                          <h1>Mini gra QR – 9.7.2</h1>
+                                                                                                                      <h1>Mini gra QR – 9.7.3</h1>
 
 <div id="screen-init">
   <button id="startBtn">START</button>
@@ -66,10 +68,10 @@ button:active { background: #0056b3; }
 <div id="screen-game">
 <p id="targetLetter"></p>
 <p id="timerInfo"></p>
-<div id="overlayMessage"></div> <!-- teraz poniżej timerInfo -->
   <div id="pointsClock">
     <div>Punkty: <span id="points">0</span></div>
     <div>Czas gry: <span id="gameClock">00:00</span></div>
+<div id="overlayMessage"></div> <!-- teraz poniżej timerInfo -->
   </div>
 </div>
 
