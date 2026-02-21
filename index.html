@@ -80,111 +80,7 @@
 </style></head>
 
 <body>
-						<h1>Mini gra QR - 9.6.2</h1>
-
-<div id="screen-init">
-  <p>Zeskanowałeś kod startowy.</p>
-  <button id="startBtn">START</button>
-</div>
-
-<div id="screen-game" style="display:none;">
-  <p class="info big" id="targetInfo"></p>
-  <p class="info" id="status"></p>
-  <p class="info" id="timerInfo"></p>
-  <p class="info" id="historyInfo">Historia:</p>
-  <p class="info">Punkty: <span id="points">0</span></p>
-
-  <div id="quizBox"></div>
-  <div id="scanResult" style="display:none;"></div>
-</div>
-
-<div id="screen-end" style="display:none;">
-<h2 id="endMessage"></h2>
-</div>
-
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – quiz + skan</title>
-
-<style>
- body {
-   font-family: Arial, sans-serif;
-   padding: 16px;
-   margin: 0;
-   font-size: 20px;
-   background: #f4f4f4;
- }
-
- h1 {
-   font-size: 26px;
-   margin-bottom: 20px;
- }
-
- button {
-   width: 100%;
-   padding: 18px;
-   font-size: 22px;
-   margin: 10px 0;
-   border-radius: 12px;
-   border: none;
-   background: #007bff;
-   color: white;
- }
-
- button:active {
-   background: #0056b3;
- }
-
- .info {
-   margin-top: 12px;
-   font-weight: bold;
-   font-size: 22px;
- }
-
- .big {
-   font-size: 28px;
- }
-
- .green { color: green; }
- .red { color: red; }
-
- .blink {
-   animation: blinker 0.7s linear infinite;
- }
-
- @keyframes blinker {
-   50% { opacity: 0; }
- }
-
- #scanResult {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   display: none;
-   justify-content: center;
-   align-items: center;
-   font-size: 56px;
-   font-weight: bold;
-   background: white;
-   z-index: 999;
- }
-
- #scanResult.success {
-   color: #00cc44;
- }
-
- #scanResult.fail {
-   color: #cc0000;
- }
-</style></head>
-
-<body>
-						<h1>Mini gra QR - 9.6.1</h1>
+						<h1>Mini gra QR - 9.6.3</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -208,325 +104,116 @@
 
 <script>
 const CODES = ["A","B","C"];
-let gameState = "INIT";
 let currentTarget = null;
-let previousTargets = [];
 let points = 0;
-let currentTask = null;
-let timeBonus = 0;
-let scanBlocked = false;
-let blockTimeout = null;
-let taskCountdown = 5;
-let taskCountdownInterval;
-let lastScanTime = 0;
-
+let isLocked = false;
+let timeLeft = 5;
+let timerInterval = null;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
 const targetInfo = document.getElementById("targetInfo");
 const status = document.getElementById("status");
 const timerInfo = document.getElementById("timerInfo");
-const historyInfo = document.getElementById("historyInfo");
 const pointsEl = document.getElementById("points");
-const quizBox = document.getElementById("quizBox");
-const reader = document.getElementById("reader");
-const scanResult = document.getElementById("scanResult");
 
-/* HISTORIA */
-function updateHistory() {
-  const visibleHistory = previousTargets.slice(0, -1);
-  historyInfo.innerText = "Historia: " + visibleHistory.join(" → ");
-}
-
-/* LOSOWANIE KODU */
+/* LOSOWANIE BEZ POWTÓRKI */
 function pickNextTarget() {
   const available = CODES.filter(c => c !== currentTarget);
   currentTarget = available[Math.floor(Math.random() * available.length)];
-  previousTargets.push(currentTarget);
   targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
-  updateHistory();
 }
 
-/* LOSOWA ZADANIA */
-function startRandomTask() {
-  const tasks = ["QUIZ", "SCAN_ONLY", "MIX", "TIME", "BLOCK"];
-  const randomTask = tasks[Math.floor(Math.random() * tasks.length)];
-  selectTask(randomTask);
+/* TIMER */
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 5;
+  timerInfo.innerText = `Czas: ${timeLeft}s`;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    timerInfo.innerText = `Czas: ${timeLeft}s`;
+
+    if(timeLeft <= 0) {
+      clearInterval(timerInterval);
+      lockGame();
+    }
+  }, 1000);
 }
 
-function selectTask(task) {
-  currentTask = task;
-  
-  if(task === "QUIZ") {
-    status.className = "";
-    status.innerText = "QUIZ";
-    generateQuiz();
-  } 
-  else if(task === "MIX") {
-    status.className = "";
-    status.innerText = "Utrudnienie MIX";
-    startScanPhase();
-  }
-  else if(task === "TIME") {
-    status.className = "";
-    timeBonus = Math.random() < 0.5 ? 2 : -2;
-    const sign = timeBonus > 0 ? "+" : "";
-    status.innerText = `Bonus czasowy: ${sign}${timeBonus}s`;
-    startScanPhase();
-  }
-  else if(task === "BLOCK") {
-    status.className = "";
-    status.innerText = "BLOKADA SKANERA – 3 sekundy";
-    startScanPhase();
-    activateScanBlock();
-  }
-  else {
-    status.className = "";
-    status.innerText = "SKANUJ KOD QR.";
-    startScanPhase();
+/* BLOKADA */
+function lockGame() {
+  isLocked = true;
+  document.body.classList.add("locked");
+  status.className = "red";
+  status.innerText = " ";
+
+  if (navigator.vibrate) {
+    navigator.vibrate([200,100,200,100,400]);
   }
 }
 
-/* UTRUDNIENIE MIX */
-function resolveExpectedCode(task, target) {
-  if(task !== "MIX") return target;
-  const index = CODES.indexOf(target);
-  return CODES[(index + 1) % CODES.length];
-}
+/* ODBLOKOWANIE */
+function unlockGame() {
+  if(!isLocked) return;
 
-/* QUIZ */
-function generateQuiz() {
-  gameState = "QUIZ";
-  quizBox.innerHTML = "";
-  timerInfo.innerText = "";
-
-  startTaskCountdown(() => {
-      // jeśli czas minął podczas QUIZ lub skanu po quizie
-      showScanResult(false, handleFail);
-  });
-
-  const a = rand();
-  const b = rand();
-  const c = rand();
-  const d = rand();
-  const op1 = randOp();
-  const op2 = randOp();
-  const left = evalSafe(a, op1, b);
-  const right = evalSafe(c, op2, d);
-  const correct = left > right ? ">" : "<";
-
-  quizBox.innerHTML = `
-    <p class="big">${a} ${op1} ${b} ? ${c} ${op2} ${d}</p>
-    <button onclick="quizAnswer('>','${correct}')">&gt;</button>
-    <button onclick="quizAnswer('<','${correct}')">&lt;</button>
-  `;
-}
-
-function quizAnswer(answer, correct) {
-  if(answer === correct) {
-    status.className = "";
-    status.innerText = "Dobrze! Skanuj kod.";
-    startScanPhase(); // timer QUIZ dalej działa
-  } else {
-    status.className = "red";
-    status.innerText = "Błąd w quizie – cofanie";
-    clearInterval(taskCountdownInterval);
-    handleFail();
-  }
+  isLocked = false;
+  document.body.classList.remove("locked");
+  status.className = "";
+  startTimer();
 }
 
 /* SKAN */
-function startScanPhase() {
-
-  gameState = "SCAN";
-  quizBox.innerHTML = "";
-
-  if(currentTask !== "QUIZ") {
-    startTaskCountdown(() => {
-        showScanResult(false, handleFail);
-    });
-  }
-}
-
-
-
-
 function onScan(text) {
 
-  const now = Date.now();
-  if(now - lastScanTime < 800) return;
-  lastScanTime = now;
+  let code = text.toUpperCase().trim();
 
-  if(gameState !== "SCAN") return;
-  if(scanBlocked) return;
-
-  let code = text;
-
-  if(text.includes("code=")) {
-    const url = new URL(text, window.location.href);
-    code = url.searchParams.get("code");
+  if(isLocked) {
+    if(code === "UNLOCK") {
+      unlockGame();
+    }
+    return;
   }
 
-  code = code.toUpperCase().trim();
-
-  const expectedCode = resolveExpectedCode(currentTask, currentTarget);
-
-  console.log("SCAN:", code, "OCZEKIWANY:", expectedCode);
-
-  if(code === expectedCode) {
-
-    currentTask = null;
-    clearInterval(taskCountdownInterval);
-    timeBonus = 0;
+  if(code === currentTarget) {
 
     points++;
     pointsEl.innerText = points;
 
-    status.className = "";
-    status.innerText = "DOBRZE!";
+    if(points >= 5) {
+      endGame("Wygrana! 5 punktów");
+      return;
+    }
 
-    showScanResult(true, () => {
-        if(points >= 5) endGame("Wygrana! 5 punktów");
-        else {
-            pickNextTarget();
-            startRandomTask();
-        }
-    });
+    pickNextTarget();
+    startTimer();
 
-  } else if(currentTask === "MIX") {
-
-    currentTask = null;
-    status.className = "red";
-    status.innerText = "Zły kod! Wracasz do poprzedniego skanu";
-    showScanResult(false, handleFail);
-
-  } else {
-
-    status.className = "red";
-    status.innerText = "Niepoprawny kod – spróbuj jeszcze raz";
   }
 }
 
-
-/* TIMER ZADANIA */
-function startTaskCountdown(callback) {
-    clearInterval(taskCountdownInterval);
-    taskCountdown = 5 + timeBonus;
-    timerInfo.innerText = `Czas: ${taskCountdown}s`;
-
-    taskCountdownInterval = setInterval(() => {
-        taskCountdown--;
-        timerInfo.innerText = `Czas: ${taskCountdown}s`;
-        if(taskCountdown <= 0) {
-            clearInterval(taskCountdownInterval);
-            timeBonus = 0;
-            if(currentTask === "MIX") currentTask = null;
-            if(callback) callback();
-        }
-    }, 1000);
-}
-
-/* BLOKADA */
-function activateScanBlock() {
-  scanBlocked = true;
-  status.className = "red";
-  status.innerText = "BLOKADA AKTYWNA – SKANER NIE CZYTA";
-
-  blockTimeout = setTimeout(() => {
-    scanBlocked = false;
-    status.className = "green";
-    status.innerText = "SKANER AKTYWNY – SZUKAJ KODU";
-  }, 2000);
-}
-
-/* WYNIK SKANU */
-function showScanResult(success, callback) {
-
-  scanBlocked = true;
-  gameState = "LOCKED";   // 🔥 NOWE – blokada całej gry
-
-  scanResult.style.display = "flex";
-
-  scanResult.className = success ? "success" : "fail";
-  scanResult.innerText = success ? "SUKCES" : "PORAŻKA";
-
-  setTimeout(() => {
-
-    scanResult.style.display = "none";
-
-    scanBlocked = false;
-    gameState = "SCAN";   // 🔥 przywrócenie stanu
-
-    if (callback) callback();
-
-  }, 1000);
-}
-
-
-/* COFANIE */
-function handleFail() {
-  timeBonus = 0;
-  clearInterval(taskCountdownInterval);
-
-  if(previousTargets.length <= 1) {
-    status.className = "red";
-    endGame("Porażka – brak punktów");
-    return;
-  }
-
-  previousTargets.pop();
-  currentTarget = previousTargets[previousTargets.length - 1];
-  if(points > 0) points--;
-  pointsEl.innerText = points;
-  updateHistory();
-  targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
-
-  status.className = "green blink";
-  status.innerText = `Cofnięcie !!! SKANUJ > ${currentTarget}`;
-
-  // Reset i restart timera jeśli cofamy się do QUIZ
-  if(currentTask === "QUIZ") {
-    startTaskCountdown(() => {
-      showScanResult(false, handleFail);
-    });
-  }
-
-  startScanPhase();
-}
-
-/* KONIEC GRY */
+/* KONIEC */
 function endGame(msg) {
-  gameState = "FINISHED";
+  clearInterval(timerInterval);
   document.getElementById("screen-game").style.display = "none";
   document.getElementById("screen-end").style.display = "block";
-  document.getElementById("endMessage").className = "green";
   document.getElementById("endMessage").innerText = msg;
-  if(html5QrCode) html5QrCode.stop();
-  clearInterval(taskCountdownInterval);
 }
 
 /* START */
 startBtn.onclick = async () => {
 
-  // uruchom NFC dopiero po kliknięciu
   if ('NDEFReader' in window) {
     try {
       const nfcReader = new NDEFReader();
       await nfcReader.scan();
 
       nfcReader.onreading = event => {
-  const decoder = new TextDecoder();
-  const record = event.message.records[0];
-
-  let text = decoder.decode(record.data);
-  text = text.replace(/\u0000/g, "").trim().toUpperCase();
-
-  console.log("NFC RAW:", text);
-  onScan(text);
-};
-
-
-      console.log("NFC aktywne");
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        let text = decoder.decode(record.data);
+        text = text.replace(/\u0000/g, "").trim().toUpperCase();
+        onScan(text);
+      };
 
     } catch (error) {
       console.log("Błąd NFC:", error);
@@ -535,31 +222,12 @@ startBtn.onclick = async () => {
 
   document.getElementById("screen-init").style.display = "none";
   document.getElementById("screen-game").style.display = "block";
+
   pickNextTarget();
-  startRandomTask();
+  startTimer();
 };
-
-
-/* NARZĘDZIA */
-function rand() { return Math.floor(Math.random()*9)+1; }
-function randOp() { return ["+","-","*","/"][Math.floor(Math.random()*4)]; }
-function evalSafe(a,op,b) {
-  if(op==="/") return a/b;
-  if(op==="*") return a*b;
-  if(op==="+") return a+b;
-  return a-b;
-}
-
-
 </script>
 
 
 </body>
 </html>
-
-
-
-
-</body>
-</html>
-
