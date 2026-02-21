@@ -3,103 +3,101 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – duża litera</title>
+<title>Mini gra QR – 9.7.0</title>
 
 <style>
-body {
-  margin:0;
-  font-family: Arial, sans-serif;
-  background:#f4f4f4;
-}
+  body {
+    font-family: Arial, sans-serif;
+    padding: 0;
+    margin: 0;
+    background: #f4f4f4;
+  }
 
-h1 { font-size: 26px; margin:16px; text-align:center; }
+  h1 {
+    font-size: 26px;
+    margin: 20px;
+    text-align:center;
+  }
 
-button {
-  width: 100%;
-  padding: 18px;
-  font-size: 22px;
-  margin: 10px 0;
-  border-radius: 12px;
-  border: none;
-  background: #007bff;
-  color: white;
-}
+  button {
+    width: 100%;
+    padding: 18px;
+    font-size: 22px;
+    margin: 10px 0;
+    border-radius: 12px;
+    border: none;
+    background: #007bff;
+    color: white;
+  }
+  button:active { background: #0056b3; }
 
-button:active { background: #0056b3; }
+  /* CENTRALNA LITERA */
+  #letterContainer {
+    flex:5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size: 120px;
+    font-weight:bold;
+  }
 
-/* --- EKRAN GRY --- */
-#screen-game {
-  height: 100vh;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-  align-items:center;
-}
+  /* TIMER DO BLOKADY */
+  #timerContainer {
+    flex:1;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size: 72px;
+    font-weight:bold;
+  }
 
-/* 🔹 Litera centralna */
-#letterContainer {
-  flex:5;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size: 12vw;
-  font-weight:bold;
-}
+  /* PUNKTY + CZAS CAŁKOWITY */
+  #bottomInfo {
+    flex:1;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    width:100%;
+    font-size: 28px;
+    padding-bottom: 16px;
+  }
 
-/* 🔹 Timer */
-#timerContainer {
-  flex:1;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size: 8vw;
-  font-weight:bold;
-}
+  /* FLASH SUKCES / BŁĄD / BLOKADA */
+  #overlayMessage {
+    position: fixed;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    font-size: 100px;
+    font-weight: bold;
+    color: white;
+    z-index: 999;
+    text-align:center;
+    text-shadow: 2px 2px 4px #000000;
+  }
 
-/* 🔹 Punkty i czas gry na dole */
-#bottomInfo {
-  flex:1;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  width:100%;
-  font-size: 4vw;
-}
-
-/* 🔹 Overlay efekty */
-#overlayMessage {
-  position: fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  font-size:8vw;
-  font-weight:bold;
-  z-index:999;
-  text-align:center;
-}
-
-.flash-success { background-color: #00cc44 !important; color:black !important; }
-.flash-error   { background-color: #ff4444 !important; color:black !important; }
-.locked        { background-color: #cc0000 !important; color:black !important; }
-
+  /* EFEKTY MIGANIA */
+  .flash-success { background-color: #00cc44 !important; color: black !important; }
+  .flash-error   { background-color: #ff4444 !important; color: black !important; }
+  .locked        { background-color: #cc0000 !important; color: black !important; }
 </style>
 </head>
 
 <body>
-<h1>Mini gra QR – 9.6.9</h1>
+<h1>Mini gra QR - 9.7.0</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
   <button id="startBtn">START</button>
 </div>
 
-<div id="screen-game" style="display:none;">
-  <div id="letterContainer"><span id="targetInfo"></span></div>
-  <div id="timerContainer"><span id="timerInfo"></span></div>
+<div id="screen-game" style="display:none; height: 80vh; display:flex; flex-direction:column;">
+  <div id="timerContainer">Czas: 5s</div>
+  <div id="letterContainer">A</div>
   <div id="bottomInfo">
     <div>Punkty: <span id="points">0</span></div>
     <div>Czas gry: <span id="gameClock">00:00</span></div>
@@ -107,76 +105,68 @@ button:active { background: #0056b3; }
   <div id="overlayMessage"></div>
 </div>
 
-<div id="screen-end" style="display:none;">
+<div id="screen-end" style="display:none; text-align:center; font-size: 48px;">
   <h2 id="endMessage"></h2>
 </div>
 
 <script>
 const overlay = document.getElementById("overlayMessage");
-let history = [];
+const ROUTE = ["A","B","C","D","E"];
+let routeIndex = 0;
+let routeDirection = 1;
+let currentTarget = null;
+let previousTargets = [];
 let points = 0;
-let isLocked = false;
 let timeLeft = 5;
 let timerInterval = null;
 let gameFinished = false;
 let gameStartTime = null;
 let gameClockInterval = null;
-
-/* STAŁA TRASA */
-const ROUTE = ["A","B","C","D","E"];
-let routeIndex = 0;
-let routeDirection = 1;
-let currentTarget = null;
+let isLocked = false;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
-const targetInfo = document.getElementById("targetInfo");
-const timerInfo = document.getElementById("timerInfo");
+const letterContainer = document.getElementById("letterContainer");
+const timerContainer = document.getElementById("timerContainer");
 const pointsEl = document.getElementById("points");
+const gameClockEl = document.getElementById("gameClock");
 
-/* --- INICJALIZACJA TRASY --- */
+/* --- TRASA --- */
 function initializeRoute() {
   routeIndex = Math.floor(Math.random() * ROUTE.length);
   routeDirection = Math.random() < 0.5 ? 1 : -1;
   currentTarget = ROUTE[routeIndex];
-  history = [currentTarget];
-  targetInfo.innerText = currentTarget;
+  previousTargets = [currentTarget];
+  letterContainer.innerText = currentTarget;
 }
 
-/* --- PRZEJŚCIE DO NASTĘPNEGO PUNKTU --- */
 function moveToNextTarget() {
   routeIndex = (routeIndex + routeDirection + ROUTE.length) % ROUTE.length;
   currentTarget = ROUTE[routeIndex];
-  history.push(currentTarget);
-  targetInfo.innerText = currentTarget;
+  previousTargets.push(currentTarget);
+  letterContainer.innerText = currentTarget;
 }
 
-/* --- TIMER 5s --- */
+/* --- TIMER BLOKADY --- */
 function startTimer() {
   clearInterval(timerInterval);
   timeLeft = 5;
-  timerInfo.innerText = `${timeLeft}s`;
-
+  timerContainer.innerText = `Czas: ${timeLeft}s`;
   timerInterval = setInterval(()=>{
     timeLeft--;
-    timerInfo.innerText = `${timeLeft}s`;
-    if(timeLeft <= 0){
-      clearInterval(timerInterval);
-      lockGame();
-    }
+    timerContainer.innerText = `Czas: ${timeLeft}s`;
+    if(timeLeft<=0){ clearInterval(timerInterval); lockGame(); }
   },1000);
 }
 
 /* --- BLOKADA --- */
-function lockGame() {
-  isLocked = true;
+function lockGame(){
+  isLocked=true;
   document.body.classList.add("locked");
-  overlay.style.display = "flex";
-  overlay.innerText = "BLOKADA";
+  flashScreen("lock","BLOKADA");
   if(navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
 }
 
-/* --- ODBLOKOWANIE --- */
 function unlockGame(){
   if(!isLocked) return;
   isLocked=false;
@@ -188,27 +178,34 @@ function unlockGame(){
 /* --- SKAN --- */
 function onScan(text){
   if(gameFinished) return;
-
-  let code = text.toUpperCase().trim();
+  let code=text.toUpperCase().trim();
 
   if(isLocked){
-    if(code === "UNLOCK") unlockGame();
+    if(code==="UNLOCK") unlockGame();
     return;
   }
 
-  if(code === currentTarget){
-    history.push(currentTarget);
+  if(code===currentTarget){
+    previousTargets.push(currentTarget);
     points++;
-    pointsEl.innerText = points;
+    pointsEl.innerText=points;
     flashScreen("success","SUKCES");
 
-    if(points >= 5){
+    if(points>=5){
       gameFinished=true;
       clearInterval(timerInterval);
       clearInterval(gameClockInterval);
+
+      letterContainer.style.display="none";
+      timerContainer.style.display="none";
+      document.getElementById("bottomInfo").style.display="none";
+
       overlay.style.display="flex";
       overlay.style.backgroundColor="#00cc44";
-      overlay.innerHTML=`WYGRANA!<br>Czas: ${document.getElementById("gameClock").innerText}<br>Trasa: ${history.join(" → ")}`;
+      overlay.innerHTML = `WYGRANA!<br>Czas: ${gameClockEl.innerText}<br>Trasa: ${previousTargets.join(" → ")}`;
+      overlay.style.fontSize="80px";
+      overlay.style.color="white";
+
       return;
     }
 
@@ -226,40 +223,43 @@ function onScan(text){
 function flashScreen(type,message){
   overlay.style.display="flex";
   overlay.innerText=message;
+  overlay.style.color="white";
 
   if(type==="success") document.body.classList.add("flash-success");
   if(type==="error") document.body.classList.add("flash-error");
+  if(type==="lock") document.body.classList.add("locked");
 
   setTimeout(()=>{
     document.body.classList.remove("flash-success");
     document.body.classList.remove("flash-error");
-    overlay.style.display="none";
+    document.body.classList.remove("locked");
+    if(!gameFinished) overlay.style.display="none";
   },400);
 }
 
 /* --- ZEGAR GRY --- */
 function startGameClock(){
-  gameStartTime=Date.now();
-  gameClockInterval=setInterval(()=>{
-    const elapsed=Date.now()-gameStartTime;
-    const seconds=Math.floor(elapsed/1000);
-    const minutes=Math.floor(seconds/60);
-    const displaySeconds=seconds%60;
-    document.getElementById("gameClock").innerText=
-      String(minutes).padStart(2,"0")+":"+String(displaySeconds).padStart(2,"0");
+  gameStartTime = Date.now();
+  gameClockInterval = setInterval(()=>{
+    const elapsed = Date.now()-gameStartTime;
+    const sec = Math.floor(elapsed/1000);
+    const min = Math.floor(sec/60);
+    const displaySec = sec%60;
+    gameClockEl.innerText = String(min).padStart(2,"0")+":"+String(displaySec).padStart(2,"0");
   },200);
 }
 
 /* --- START --- */
-startBtn.onclick=async()=>{
+startBtn.onclick = async ()=>{
   if('NDEFReader' in window){
     try{
-      const nfcReader=new NDEFReader();
+      const nfcReader = new NDEFReader();
       await nfcReader.scan();
-      nfcReader.onreading=event=>{
-        const decoder=new TextDecoder();
-        const record=event.message.records[0];
-        let text=decoder.decode(record.data).replace(/\u0000/g,"").trim().toUpperCase();
+      nfcReader.onreading = event=>{
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        let text = decoder.decode(record.data);
+        text=text.replace(/\u0000/g,"").trim().toUpperCase();
         onScan(text);
       };
     }catch(e){console.log("Błąd NFC:",e);}
