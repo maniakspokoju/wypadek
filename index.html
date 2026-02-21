@@ -40,12 +40,13 @@ button:active { background: #0056b3; }
 
 
 #overlayMessage {
-  display: none;
-  text-align:center; 
-  font-size: 48px;  /* mniejsza niż litera i timer */
+  position: relative;   /* lub absolute/fixed, jeśli chcesz nakładkę */
+  width: 100%;
+  text-align: center;
+  font-size: 48px;
   font-weight: bold;
   color: white;
-  margin: 10px 0;   /* odstęp od timerInfo */
+  margin: 10px auto;   /* automatyczne marginesy poziome */
 }
 
 .locked { background-color: #cc0000 !important; color: white !important; }
@@ -59,7 +60,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.1</h1>
+																																			<h1>Mini gra QR – 9.8.2</h1>
 
 <div id="screen-init">
   <button id="startBtn">START</button>
@@ -252,6 +253,7 @@ startBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
