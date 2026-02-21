@@ -63,14 +63,10 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.6</h1>
+																																			<h1>Mini gra QR – 9.9.2</h1>
 
 <div id="screen-init">
-  <label>
-    Liczba punktów do zdobycia (3-7):
-    <input type="number" id="inputPoints" min="3" max="7" value="7">
-  </label>
-  <br><br>
+
   <label>
     Czas na zeskanowanie kolejnej litery w sekundach (3-60):
     <input type="number" id="inputTime" min="3" max="60" value="10">
@@ -96,7 +92,18 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
-const ROUTE = ["A","B","C","D","E","F","G"];
+const ROUTES = [
+  5: ["A","C","B","E","G"],
+  6: ["F","B","D","A","G","C"],
+  7: ["C","E","A","D","F","B","G"],
+  8: ["B","G","D","C","F","A","E","B"],
+  9: ["D","A","C","F","B","G","E","C","A"],
+  10: ["E","B","D","A","G","C","F","B","D","G"],
+  11: ["A","C","F","B","E","G","D","C","A","F","B"],
+  12: ["G","D","B","E","C","F","A","G","C","D","B","E"],
+  13: ["B","E","A","C","F","D","G","B","C","E","A","F","D"],
+  14: ["C","F","A","D","B","G","E","C","F","B","D","A","E","G"],
+];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
@@ -108,7 +115,7 @@ let timerInterval = null;
 let gameStartTime = null;
 let gameClockInterval = null;
 let gameFinished = false;
-let maxPoints = 7;    // domyślnie 7 punktów
+let maxPoints;    // domyślnie 7 punktów
 let scanTime = 10;    // domyślnie 10 sekund na literę
 
 const startBtn = document.getElementById("startBtn");
@@ -126,10 +133,24 @@ const endRoute = document.getElementById("endRoute");
 /* ===== FUNKCJE ===== */
 
 function initializeRoute() {
-  routeIndex = Math.floor(Math.random() * ROUTE.length);
+  // Losujemy trasę
+  const routeIndex = Math.floor(Math.random() * ROUTES.length);
+  const route = ROUTES[routeIndex];
+  maxPoints = ROUTE.length; // liczba punktów = długość wybranej trasy
+
+  // Losujemy kierunek 1 lub -1
   routeDirection = Math.random() < 0.5 ? 1 : -1;
-  currentTarget = ROUTE[routeIndex];
+
+  // Losujemy literę startową w wybranej trasie
+  routeIndex = Math.floor(Math.random() * route.length);
+  currentTarget = route[routeIndex];
+
+  // Historia zaczyna się od startowej litery
   history = [currentTarget];
+
+  // Zastępujemy globalną ROUTE aktualną trasą
+  ROUTE.splice(0, ROUTE.length, ...route);
+
   updateDisplay();
 }
 
@@ -212,16 +233,16 @@ function onScan(text) {
     flashScreen("success","SUKCES");
 
 if(points >= maxPoints) {
-  gameFinished = true;
-  clearInterval(timerInterval);
-  clearInterval(gameClockInterval);
-  setTimeout(()=> {
-    screenGame.style.display="none";
-    screenEnd.style.display="block";
-    endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-    endRoute.innerText = "Trasa: " + history.join(" → ");
-  },800);
-  return;
+    gameFinished = true;
+    clearInterval(timerInterval);
+    clearInterval(gameClockInterval);
+    setTimeout(()=> {
+        screenGame.style.display = "none";
+        screenEnd.style.display = "block";
+        endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+        endRoute.innerText = "Trasa: " + history.join(" → ");
+    },800);
+    return;
 }
 
     setTimeout(()=> {
