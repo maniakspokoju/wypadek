@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – 9.7.1</title>
+<title>Mini gra QR – 9.9.0</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -38,18 +38,17 @@ button:active { background: #0056b3; }
 #timerInfo { font-size: 72px; margin: 10px 0; }
 #pointsClock { display:flex; justify-content:space-between; font-size: 28px; padding: 0 20px; }
 
-
 #overlayMessage {
-  position: fixed;        /* nakładka względem okna */
-  bottom: 20px;           /* 20px od dolnej krawędzi */
-  left: 50%;              /* środek poziomo */
-  transform: translateX(-50%);  /* dokładne wyśrodkowanie */
-  font-size: 48px;        /* duża czcionka */
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 48px;
   font-weight: bold;
   color: white;
   text-align: center;
-  z-index: 1000;          /* żeby była nad wszystkim */
-  pointer-events: none;   /* kliknięcia przechodzą przez overlay */
+  z-index: 1000;
+  pointer-events: none;
 }
 
 .locked { background-color: #cc0000 !important; color: white !important; }
@@ -63,12 +62,27 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.9.2</h1>
+<h1>Mini gra QR – 9.9.0</h1>
 
 <div id="screen-init">
-
   <label>
-    Czas na zeskanowanie kolejnej litery w sekundach (3-60):
+    Wybierz trasę:
+    <select id="routeSelect">
+      <option value="5">Trasa 5: A B C D E</option>
+      <option value="6">Trasa 6: A B C D E F</option>
+      <option value="7">Trasa 7: A B C D E F G</option>
+      <option value="8">Trasa 8: B C D E F G A B</option>
+      <option value="9">Trasa 9: C D E F G A B C D</option>
+      <option value="10">Trasa 10: D E F G A B C D E F</option>
+      <option value="11">Trasa 11: E F G A B C D E F G A</option>
+      <option value="12">Trasa 12: F G A B C D E F G A B C</option>
+      <option value="13">Trasa 13: G A B C D E F G A B C D E</option>
+      <option value="14">Trasa 14: A B C D E F G A B C D E F</option>
+    </select>
+  </label>
+  <br><br>
+  <label>
+    Czas na zeskanowanie litery (3-60 s):
     <input type="number" id="inputTime" min="3" max="60" value="10">
   </label>
   <br><br>
@@ -78,12 +92,11 @@ button:active { background: #0056b3; }
 <div id="screen-game">
 <p id="targetLetter"></p>
 <p id="timerInfo"></p>
-  <div id="pointsClock">
-    <div>Punkty: <span id="points">0</span></div>
-    <div>Czas gry: <span id="gameClock">00:00</span></div>
-	  </div>
-<p id="overlayMessage"></p> <!-- teraz poniżej timerInfo -->
-  
+<div id="pointsClock">
+  <div>Punkty: <span id="points">0</span></div>
+  <div>Czas gry: <span id="gameClock">00:00</span></div>
+</div>
+<p id="overlayMessage"></p>
 </div>
 
 <div id="screen-end">
@@ -92,18 +105,7 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
-const ROUTES = [
-  5: ["A","C","B","E","G"],
-  6: ["F","B","D","A","G","C"],
-  7: ["C","E","A","D","F","B","G"],
-  8: ["B","G","D","C","F","A","E","B"],
-  9: ["D","A","C","F","B","G","E","C","A"],
-  10: ["E","B","D","A","G","C","F","B","D","G"],
-  11: ["A","C","F","B","E","G","D","C","A","F","B"],
-  12: ["G","D","B","E","C","F","A","G","C","D","B","E"],
-  13: ["B","E","A","C","F","D","G","B","C","E","A","F","D"],
-  14: ["C","F","A","D","B","G","E","C","F","B","D","A","E","G"],
-];
+let ROUTE = [];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
@@ -115,8 +117,7 @@ let timerInterval = null;
 let gameStartTime = null;
 let gameClockInterval = null;
 let gameFinished = false;
-let maxPoints;    // domyślnie 7 punktów
-let scanTime = 10;    // domyślnie 10 sekund na literę
+let scanTime = 10; // czas na literę
 
 const startBtn = document.getElementById("startBtn");
 const targetLetter = document.getElementById("targetLetter");
@@ -131,26 +132,11 @@ const endMessage = document.getElementById("endMessage");
 const endRoute = document.getElementById("endRoute");
 
 /* ===== FUNKCJE ===== */
-
 function initializeRoute() {
-  // Losujemy trasę
-  const routeIndex = Math.floor(Math.random() * ROUTES.length);
-  const route = ROUTES[routeIndex];
-  maxPoints = ROUTE.length; // liczba punktów = długość wybranej trasy
-
-  // Losujemy kierunek 1 lub -1
+  routeIndex = Math.floor(Math.random() * ROUTE.length);
   routeDirection = Math.random() < 0.5 ? 1 : -1;
-
-  // Losujemy literę startową w wybranej trasie
-  routeIndex = Math.floor(Math.random() * route.length);
-  currentTarget = route[routeIndex];
-
-  // Historia zaczyna się od startowej litery
+  currentTarget = ROUTE[routeIndex];
   history = [currentTarget];
-
-  // Zastępujemy globalną ROUTE aktualną trasą
-  ROUTE.splice(0, ROUTE.length, ...route);
-
   updateDisplay();
 }
 
@@ -169,7 +155,7 @@ function updateDisplay() {
 
 function startTimer() {
   clearInterval(timerInterval);
-  timeLeft = scanTime;  // teraz czas z pola startowego
+  timeLeft = scanTime;
   timerInfo.innerText = `Czas: ${timeLeft}s`;
 
   timerInterval = setInterval(() => {
@@ -209,7 +195,7 @@ function flashScreen(type,message) {
     document.body.classList.remove("flash-success");
     document.body.classList.remove("flash-error");
     if(!isLocked) overlay.style.display="none";
-  },1000); // 🔥 wydłużony czas wyświetlania
+  },1000);
 }
 
 function onScan(text) {
@@ -223,33 +209,30 @@ function onScan(text) {
   }
 
   if(code===currentTarget) {
-    // 🔥 zatrzymanie licznika natychmiast po prawidłowym skanie
     clearInterval(timerInterval);
 
     points++;
     history.push(currentTarget);
     updateDisplay();
-
     flashScreen("success","SUKCES");
 
-if(points >= maxPoints) {
-    gameFinished = true;
-    clearInterval(timerInterval);
-    clearInterval(gameClockInterval);
-    setTimeout(()=> {
-        screenGame.style.display = "none";
-        screenEnd.style.display = "block";
+    if(points >= ROUTE.length) {
+      gameFinished = true;
+      clearInterval(timerInterval);
+      clearInterval(gameClockInterval);
+      setTimeout(()=> {
+        screenGame.style.display="none";
+        screenEnd.style.display="block";
         endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
         endRoute.innerText = "Trasa: " + history.join(" → ");
-    },800);
-    return;
-}
+      },800);
+      return;
+    }
 
     setTimeout(()=> {
       moveToNextTarget();
-      startTimer(); // 🔥 reset nowego 5-sekundowego timera
+      startTimer();
     },1000);
-
   } else {
     flashScreen("error","BŁĘDNY KOD");
   }
@@ -267,26 +250,32 @@ function startGameClock() {
 
 /* ===== START ===== */
 startBtn.onclick = async () => {
-  // Pobranie wartości z pól i konwersja na liczby
-  const pointsInput = parseInt(document.getElementById("inputPoints").value);
-  const timeInput = parseInt(document.getElementById("inputTime").value);
+  const selectedRoute = document.getElementById("routeSelect").value;
+  scanTime = parseInt(document.getElementById("inputTime").value);
 
-  if(pointsInput >= 3 && pointsInput <= 7) maxPoints = pointsInput;
-  if(timeInput >= 3 && timeInput <= 60) scanTime = timeInput;
+  // 🔹 Tworzymy trasę na podstawie wyboru (na razie prosta litera powtarzana)
+  ROUTE = [];
+  const letterOptions = ["A","B","C","D","E","F","G"];
+  for(let i=0;i<parseInt(selectedRoute);i++){
+    // wybieramy losową literę, upewniamy się że nie powtarza się bezpośrednio
+    let nextLetter;
+    do {
+      nextLetter = letterOptions[Math.floor(Math.random()*letterOptions.length)];
+    } while(i>0 && nextLetter===ROUTE[i-1]);
+    ROUTE.push(nextLetter);
+  }
 
-  screenInit.style.display = "none";
-  screenGame.style.display = "block";
+  screenInit.style.display="none";
+  screenGame.style.display="block";
 
   startGameClock();
   initializeRoute();
   startTimer();
 
-  // 🔥 OBSŁUGA NFC – przyłożenie tagu wywoła onScan
   if ('NDEFReader' in window) {
     try {
       const nfcReader = new NDEFReader();
       await nfcReader.scan();
-
       nfcReader.onreading = event => {
         const decoder = new TextDecoder();
         const record = event.message.records[0];
@@ -294,19 +283,9 @@ startBtn.onclick = async () => {
         text = text.replace(/\u0000/g,"").trim();
         onScan(text);
       };
-
-    } catch(e) {
-      console.log("Błąd NFC:", e);
-    }
+    } catch(e) { console.log("Błąd NFC:", e); }
   }
 };
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
