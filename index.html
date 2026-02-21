@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – 9.9.0</title>
+<title>Mini gra QR – 9.9.1</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -272,20 +272,24 @@ startBtn.onclick = async () => {
   startTimer();
 
   // 🔥 NFC
-  if('NDEFReader' in window){
-    try{
-      const nfcReader = new NDEFReader();
-      await nfcReader.scan();
-      nfcReader.onreading=event=>{
-        const decoder=new TextDecoder();
-        const record=event.message.records[0];
-        let text=decoder.decode(record.data);
-        text=text.replace(/\u0000/g,"").trim();
-        onScan(text);
-      };
-    } catch(e){ console.log("Błąd NFC:",e); }
-  }
+if('NDEFReader' in window){
+  try{
+    const nfcReader = new NDEFReader();
+    await nfcReader.scan();
+    nfcReader.onreading = event => {
+      for(const record of event.message.records){
+        if(record.recordType === "text"){   // 🔹 sprawdzamy tylko rekordy tekstowe
+          const decoder = new TextDecoder(record.encoding || "utf-8");
+          let text = decoder.decode(record.data);
+          text = text.replace(/\u0000/g,"").trim();
+          onScan(text);
+        }
+      }
+    };
+  } catch(e){ console.log("Błąd NFC:", e); }
+}
 };
 </script>
 </body>
 </html>
+
