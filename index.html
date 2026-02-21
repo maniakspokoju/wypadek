@@ -60,7 +60,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.2</h1>
+																																			<h1>Mini gra QR – 9.8.3</h1>
 
 <div id="screen-init">
   <button id="startBtn">START</button>
@@ -83,7 +83,7 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
-const ROUTE = ["A","B","C","D","E"];
+const ROUTE = ["A","B","C","D","E","F","G"];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
@@ -196,18 +196,18 @@ function onScan(text) {
 
     flashScreen("success","SUKCES");
 
-    if(points>=5) {
-      gameFinished=true;
-      clearInterval(timerInterval);
-      clearInterval(gameClockInterval);
-      setTimeout(()=> {
+if(points>=7) {  // teraz 7 punktów do zdobycia
+    gameFinished=true;
+    clearInterval(timerInterval);
+    clearInterval(gameClockInterval);
+    setTimeout(()=> {
         screenGame.style.display="none";
         screenEnd.style.display="block";
-        endMessage.innerText=`WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-        endRoute.innerText="Trasa: "+history.join(" → ");
-      },1000);
-      return;
-    }
+        endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+        endRoute.innerText = "Trasa: " + history.join(" → ");
+    },800);
+    return;
+}
 
     setTimeout(()=> {
       moveToNextTarget();
@@ -253,6 +253,7 @@ startBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
