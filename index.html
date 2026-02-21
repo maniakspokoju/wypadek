@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – 9.9.1</title>
+<title>Mini gra QR – 9.7.1</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -36,19 +36,20 @@ button:active { background: #0056b3; }
 }
 
 #timerInfo { font-size: 72px; margin: 10px 0; }
-
 #pointsClock { display:flex; justify-content:space-between; font-size: 28px; padding: 0 20px; }
 
+
 #overlayMessage {
-  position: fixed;
-  bottom: 20px;      /* na dole ekranu */
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 48px;
+  position: fixed;        /* nakładka względem okna */
+  bottom: 20px;           /* 20px od dolnej krawędzi */
+  left: 50%;              /* środek poziomo */
+  transform: translateX(-50%);  /* dokładne wyśrodkowanie */
+  font-size: 48px;        /* duża czcionka */
   font-weight: bold;
   color: white;
   text-align: center;
-  z-index: 999;
+  z-index: 1000;          /* żeby była nad wszystkim */
+  pointer-events: none;   /* kliknięcia przechodzą przez overlay */
 }
 
 .locked { background-color: #cc0000 !important; color: white !important; }
@@ -62,30 +63,31 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-<h1>Mini gra QR – 9.9.1</h1>
+																																			<h1>Mini gra QR – 9.8.6</h1>
 
 <div id="screen-init">
   <label>
-    Czas na zeskanowanie kolejnej litery w sekundach (3-60):
-    <input type="number" id="inputTime" min="3" max="60" value="10">
+    Liczba punktów do zdobycia (3-7):
+    <input type="number" id="inputPoints" min="3" max="7" value="7">
   </label>
   <br><br>
   <label>
-    Wybierz numer trasy (5–15):
-    <input type="number" id="inputRoute" min="5" max="15" value="5">
+    Czas na zeskanowanie kolejnej litery w sekundach (3-60):
+    <input type="number" id="inputTime" min="3" max="60" value="10">
   </label>
   <br><br>
   <button id="startBtn">START</button>
 </div>
 
 <div id="screen-game">
-  <p id="targetLetter"></p>
-  <p id="timerInfo"></p>
+<p id="targetLetter"></p>
+<p id="timerInfo"></p>
   <div id="pointsClock">
     <div>Punkty: <span id="points">0</span></div>
     <div>Czas gry: <span id="gameClock">00:00</span></div>
-  </div>
-  <p id="overlayMessage"></p>
+	  </div>
+<p id="overlayMessage"></p> <!-- teraz poniżej timerInfo -->
+  
 </div>
 
 <div id="screen-end">
@@ -94,34 +96,20 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
-/* ===== STAŁE TRASY ===== */
-const FIXED_ROUTES = {
-  5: ["A","C","B","E","G"],
-  6: ["F","B","D","A","G","C"],
-  7: ["C","E","A","D","F","B","G"],
-  8: ["B","G","D","C","F","A","E","B"],
-  9: ["D","A","C","F","B","G","E","C","A"],
-  10: ["E","B","D","A","G","C","F","B","D","G"],
-  11: ["A","C","F","B","E","G","D","C","A","F","B"],
-  12: ["G","D","B","E","C","F","A","G","C","D","B","E"],
-  13: ["B","E","A","C","F","D","G","B","C","E","A","F","D"],
-  14: ["C","F","A","D","B","G","E","C","F","B","D","A","E","G"],
-  15: ["D","B","G","C","E","A","F","D","B","C","G","E","A","F","C"]
-};
-
-/* ===== ZMIENNE ===== */
-let currentRoute = [];
+const ROUTE = ["A","B","C","D","E","F","G"];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
 let history = [];
 let points = 0;
-let maxPoints = 5;
-let scanTime = 10;
+let isLocked = false;
+let timeLeft = 5;
 let timerInterval = null;
 let gameStartTime = null;
 let gameClockInterval = null;
 let gameFinished = false;
+let maxPoints = 7;    // domyślnie 7 punktów
+let scanTime = 10;    // domyślnie 10 sekund na literę
 
 const startBtn = document.getElementById("startBtn");
 const targetLetter = document.getElementById("targetLetter");
@@ -137,22 +125,17 @@ const endRoute = document.getElementById("endRoute");
 
 /* ===== FUNKCJE ===== */
 
-function chooseRoute(routeNumber) {
-  if(FIXED_ROUTES[routeNumber]) currentRoute = [...FIXED_ROUTES[routeNumber]];
-  else currentRoute = [...FIXED_ROUTES[5]];
-
-  maxPoints = currentRoute.length;
-
-  routeIndex = Math.floor(Math.random()*currentRoute.length);
-  routeDirection = Math.random()<0.5 ? 1 : -1;
-  currentTarget = currentRoute[routeIndex];
+function initializeRoute() {
+  routeIndex = Math.floor(Math.random() * ROUTE.length);
+  routeDirection = Math.random() < 0.5 ? 1 : -1;
+  currentTarget = ROUTE[routeIndex];
   history = [currentTarget];
   updateDisplay();
 }
 
 function moveToNextTarget() {
-  routeIndex = (routeIndex + routeDirection + currentRoute.length) % currentRoute.length;
-  currentTarget = currentRoute[routeIndex];
+  routeIndex = (routeIndex + routeDirection + ROUTE.length) % ROUTE.length;
+  currentTarget = ROUTE[routeIndex];
   history.push(currentTarget);
   updateDisplay();
 }
@@ -165,17 +148,17 @@ function updateDisplay() {
 
 function startTimer() {
   clearInterval(timerInterval);
-  timeLeft = scanTime;
+  timeLeft = scanTime;  // teraz czas z pola startowego
   timerInfo.innerText = `Czas: ${timeLeft}s`;
 
   timerInterval = setInterval(() => {
     timeLeft--;
     timerInfo.innerText = `Czas: ${timeLeft}s`;
-    if(timeLeft<=0) {
+    if(timeLeft <=0) {
       clearInterval(timerInterval);
       lockGame();
     }
-  },1000);
+  }, 1000);
 }
 
 function lockGame() {
@@ -188,7 +171,7 @@ function lockGame() {
 
 function unlockGame() {
   if(!isLocked) return;
-  isLocked=false;
+  isLocked = false;
   document.body.classList.remove("locked");
   overlay.style.display="none";
   startTimer();
@@ -197,18 +180,20 @@ function unlockGame() {
 function flashScreen(type,message) {
   overlay.style.display="flex";
   overlay.innerText=message;
+
   if(type==="success") document.body.classList.add("flash-success");
   if(type==="error") document.body.classList.add("flash-error");
 
-  setTimeout(()=>{
+  setTimeout(()=> {
     document.body.classList.remove("flash-success");
     document.body.classList.remove("flash-error");
     if(!isLocked) overlay.style.display="none";
-  },1000);
+  },1000); // 🔥 wydłużony czas wyświetlania
 }
 
 function onScan(text) {
   if(gameFinished) return;
+
   const code = text.toUpperCase().trim();
 
   if(isLocked) {
@@ -217,28 +202,31 @@ function onScan(text) {
   }
 
   if(code===currentTarget) {
+    // 🔥 zatrzymanie licznika natychmiast po prawidłowym skanie
     clearInterval(timerInterval);
+
     points++;
     history.push(currentTarget);
     updateDisplay();
+
     flashScreen("success","SUKCES");
 
-    if(points>=maxPoints) {
-      gameFinished=true;
-      clearInterval(timerInterval);
-      clearInterval(gameClockInterval);
-      setTimeout(()=>{
-        screenGame.style.display="none";
-        screenEnd.style.display="block";
-        endMessage.innerText=`WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-        endRoute.innerText="Trasa: "+history.join(" → ");
-      },800);
-      return;
-    }
+if(points >= maxPoints) {
+  gameFinished = true;
+  clearInterval(timerInterval);
+  clearInterval(gameClockInterval);
+  setTimeout(()=> {
+    screenGame.style.display="none";
+    screenEnd.style.display="block";
+    endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+    endRoute.innerText = "Trasa: " + history.join(" → ");
+  },800);
+  return;
+}
 
-    setTimeout(()=>{
+    setTimeout(()=> {
       moveToNextTarget();
-      startTimer();
+      startTimer(); // 🔥 reset nowego 5-sekundowego timera
     },1000);
 
   } else {
@@ -247,51 +235,57 @@ function onScan(text) {
 }
 
 function startGameClock() {
-  gameStartTime=Date.now();
-  gameClockInterval=setInterval(()=>{
-    const elapsed=Date.now()-gameStartTime;
-    const minutes=Math.floor(elapsed/60000);
-    const seconds=Math.floor((elapsed/1000)%60);
+  gameStartTime = Date.now();
+  gameClockInterval = setInterval(() => {
+    const elapsed = Date.now()-gameStartTime;
+    const minutes = Math.floor(elapsed/60000);
+    const seconds = Math.floor((elapsed/1000)%60);
     gameClockEl.innerText=`${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
   },200);
 }
 
 /* ===== START ===== */
 startBtn.onclick = async () => {
+  // Pobranie wartości z pól i konwersja na liczby
+  const pointsInput = parseInt(document.getElementById("inputPoints").value);
   const timeInput = parseInt(document.getElementById("inputTime").value);
-  const routeInput = parseInt(document.getElementById("inputRoute").value);
 
-  if(timeInput>=3 && timeInput<=60) scanTime=timeInput;
-  const routeNum = (routeInput>=5 && routeInput<=15) ? routeInput : 5;
+  if(pointsInput >= 3 && pointsInput <= 7) maxPoints = pointsInput;
+  if(timeInput >= 3 && timeInput <= 60) scanTime = timeInput;
 
-  screenInit.style.display="none";
-  screenGame.style.display="block";
+  screenInit.style.display = "none";
+  screenGame.style.display = "block";
 
-  chooseRoute(routeNum);
   startGameClock();
+  initializeRoute();
   startTimer();
 
-  // 🔥 NFC
-if('NDEFReader' in window){
-  try{
-    const nfcReader = new NDEFReader();
-    await nfcReader.scan();
-    nfcReader.onreading = event => {
-      for(const record of event.message.records){
-        if(record.recordType === "text"){   // 🔹 sprawdzamy tylko rekordy tekstowe
-          const decoder = new TextDecoder(record.encoding || "utf-8");
-          let text = decoder.decode(record.data);
-          text = text.replace(/\u0000/g,"").trim();
-          onScan(text);
-        }
-      }
-    };
-  } catch(e){ console.log("Błąd NFC:", e); }
-}
+  // 🔥 OBSŁUGA NFC – przyłożenie tagu wywoła onScan
+  if ('NDEFReader' in window) {
+    try {
+      const nfcReader = new NDEFReader();
+      await nfcReader.scan();
+
+      nfcReader.onreading = event => {
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        let text = decoder.decode(record.data);
+        text = text.replace(/\u0000/g,"").trim();
+        onScan(text);
+      };
+
+    } catch(e) {
+      console.log("Błąd NFC:", e);
+    }
+  }
 };
 </script>
 </body>
 </html>
+
+
+
+
 
 
 
