@@ -1,182 +1,135 @@
-9.6.7 dodany główny zegar
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – quiz + skan</title>
-
+<title>Mini gra QR – 9.7.1</title>
 <style>
- body {
-   font-family: Arial, sans-serif;
-   padding: 16px;
-   margin: 0;
-   font-size: 20px;
-   background: #f4f4f4;
- }
-
- h1 {
-   font-size: 26px;
-   margin-bottom: 20px;
- }
-
- button {
-   width: 100%;
-   padding: 18px;
-   font-size: 22px;
-   margin: 10px 0;
-   border-radius: 12px;
-   border: none;
-   background: #007bff;
-   color: white;
- }
-
- button:active {
-   background: #0056b3;
- }
-
- .info {
-   margin-top: 12px;
-   font-weight: bold;
-   font-size: 22px;
- }
-
- .big {
-   font-size: 28px;
- }
-
- .green { color: green; }
- .red { color: red; }
-
- .blink {
-   animation: blinker 0.7s linear infinite;
- }
-
- @keyframes blinker {
-   50% { opacity: 0; }
- }
-
- #scanResult {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: 100%;
-   display: none;
-   justify-content: center;
-   align-items: center;
-   font-size: 56px;
-   font-weight: bold;
-   background: white;
-   z-index: 999;
- }
-
- #scanResult.success {
-   color: #00cc44;
- }
-
- #scanResult.fail {
-   color: #cc0000;
- }
-
- /* 🔴 DODAJ TO NA KOŃCU */
- .locked {
-   background-color: #cc0000 !important;
-   color: white;
-
- }
-
-/* --- EFEKTY MIGANIA --- */
-
-.flash-success {
-  background-color: #00cc44 !important;
-  color: black !important;
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f4f4;
 }
 
-.flash-error {
-  background-color: #ff4444 !important;
-  color: black !important;
-}
+h1 { font-size: 26px; text-align:center; margin:20px 0; }
 
-.locked {
-  background-color: #cc0000 !important;
-  color: black !important;
-}
-
-/* Komunikat centralny */
-#overlayMessage {
-  position: fixed;
-  top: 0;
-  left: 0;
+button {
   width: 100%;
-  height: 100%;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  font-size: 48px;
-  font-weight: bold;
-  z-index: 999;
+  padding: 18px;
+  font-size: 22px;
+  margin: 20px 0;
+  border-radius: 12px;
+  border: none;
+  background: #007bff;
+  color: white;
 }
-</style></head>
+button:active { background: #0056b3; }
 
+#screen-game { display:none; text-align:center; }
+
+#targetLetter {
+  font-size: 140px;
+  font-weight: bold;
+  margin: 0;
+  line-height: 1.2;
+}
+
+#timerInfo { font-size: 72px; margin: 10px 0; }
+#pointsClock { display:flex; justify-content:space-between; font-size: 28px; padding: 0 20px; }
+
+
+#screen-game { display:none; text-align:center; }
+#overlayMessage {
+  display: none;
+  font-size: 48px;  /* mniejsza niż litera i timer */
+  font-weight: bold;
+  color: white;
+  margin: 10px 0;   /* odstęp od timerInfo */
+}
+
+.locked { background-color: #cc0000 !important; color: white !important; }
+.flash-success { background-color: #00cc44 !important; color: black !important; }
+.flash-error { background-color: #ff4444 !important; color: black !important; }
+
+#screen-end { display:none; padding:20px; text-align:center; font-size:28px; }
+#endMessage { font-size:48px; font-weight:bold; color:white; background-color:green; padding:20px; margin:20px 0; }
+#endRoute { margin-top:20px; font-size:28px; }
+</style>
+</head>
 <body>
-						<h1>Mini gra QR - 9.6.7</h1>
+
+															<h1>Mini gra QR – 9.7.7</h1>
 
 <div id="screen-init">
-  <p>Zeskanowałeś kod startowy.</p>
   <button id="startBtn">START</button>
 </div>
 
-<div id="screen-game" style="display:none;">
-  <p class="info big" id="targetInfo"></p>
-  <p class="info" id="status"></p>
-  <p class="info" id="timerInfo"></p>
-  <p class="info" id="historyInfo">Historia:</p>
-<div style="display:flex; gap:20px; align-items:center;">
-  <div>Punkty: <span id="points">0</span></div>
-  <div>Czas gry: <span id="gameClock">00:00</span></div>
+<div id="screen-game">
+<p id="targetLetter"></p>
+<p id="timerInfo"></p>
+  <div id="pointsClock">
+    <div>Punkty: <span id="points">0</span></div>
+    <div>Czas gry: <span id="gameClock">00:00</span></div>
+<div id="overlayMessage"></div> <!-- teraz poniżej timerInfo -->
+  </div>
 </div>
 
-  <div id="quizBox"></div>
-  <div id="scanResult" style="display:none;"></div>
-  <div id="overlayMessage"></div>
-
-</div>
-
-<div id="screen-end" style="display:none;">
-<h2 id="endMessage"></h2>
+<div id="screen-end">
+  <div id="endMessage"></div>
+  <div id="endRoute"></div>
 </div>
 
 <script>
-
-const overlay = document.getElementById("overlayMessage");
-let history = [];
-const CODES = ["A","B","C"];
+const ROUTE = ["A","B","C","D","E"];
+let routeIndex = 0;
+let routeDirection = 1;
 let currentTarget = null;
+let history = [];
 let points = 0;
 let isLocked = false;
 let timeLeft = 5;
 let timerInterval = null;
-let gameFinished = false;
 let gameStartTime = null;
 let gameClockInterval = null;
+let gameFinished = false;
 
-/* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
-const targetInfo = document.getElementById("targetInfo");
-const status = document.getElementById("status");
+const targetLetter = document.getElementById("targetLetter");
 const timerInfo = document.getElementById("timerInfo");
 const pointsEl = document.getElementById("points");
+const gameClockEl = document.getElementById("gameClock");
+const overlay = document.getElementById("overlayMessage");
+const screenInit = document.getElementById("screen-init");
+const screenGame = document.getElementById("screen-game");
+const screenEnd = document.getElementById("screen-end");
+const endMessage = document.getElementById("endMessage");
+const endRoute = document.getElementById("endRoute");
 
-/* LOSOWANIE BEZ POWTÓRKI */
-function pickNextTarget() {
-  const available = CODES.filter(c => c !== currentTarget);
-  currentTarget = available[Math.floor(Math.random() * available.length)];
-  targetInfo.innerHTML = `Następny kod: <span class="green big">${currentTarget}</span>`;
+/* ===== FUNKCJE ===== */
+
+function initializeRoute() {
+  routeIndex = Math.floor(Math.random() * ROUTE.length);
+  routeDirection = Math.random() < 0.5 ? 1 : -1;
+  currentTarget = ROUTE[routeIndex];
+  history = [currentTarget];
+  updateDisplay();
 }
 
-/* TIMER */
+function moveToNextTarget() {
+  routeIndex = (routeIndex + routeDirection + ROUTE.length) % ROUTE.length;
+  currentTarget = ROUTE[routeIndex];
+  history.push(currentTarget);
+  updateDisplay();
+}
+
+function updateDisplay() {
+  targetLetter.innerText = currentTarget;
+  timerInfo.innerText = `Czas: ${timeLeft}s`;
+  pointsEl.innerText = points;
+  gameClockEl.innerText = gameClockEl.innerText; // nie ruszamy
+}
+
 function startTimer() {
   clearInterval(timerInterval);
   timeLeft = 5;
@@ -185,41 +138,46 @@ function startTimer() {
   timerInterval = setInterval(() => {
     timeLeft--;
     timerInfo.innerText = `Czas: ${timeLeft}s`;
-
-    if(timeLeft <= 0) {
+    if(timeLeft <=0) {
       clearInterval(timerInterval);
       lockGame();
     }
   }, 1000);
 }
 
-/* BLOKADA */
 function lockGame() {
   isLocked = true;
   document.body.classList.add("locked");
-
   overlay.style.display = "flex";
   overlay.innerText = "BLOKADA";
-
-  if (navigator.vibrate) {
-    navigator.vibrate([200,100,200,100,400]);
-  }
+  if (navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
 }
 
-/* ODBLOKOWANIE */
 function unlockGame() {
   if(!isLocked) return;
-
   isLocked = false;
   document.body.classList.remove("locked");
   overlay.style.display = "none";
   startTimer();
 }
 
+function flashScreen(type, message) {
+  overlay.style.display = "flex";
+  overlay.innerText = message;
+
+  if(type === "success") document.body.classList.add("flash-success");
+  if(type === "error") document.body.classList.add("flash-error");
+
+  setTimeout(() => {
+    document.body.classList.remove("flash-success");
+    document.body.classList.remove("flash-error");
+    if(!isLocked) overlay.style.display = "none";
+  }, 800);
+}
+
 /* SKAN */
 function onScan(text) {
-
-  if(gameFinished) return;   // <<< BLOKADA CAŁKOWITA
+  if(gameFinished) return;
 
   let code = text.toUpperCase().trim();
 
@@ -232,6 +190,8 @@ function onScan(text) {
 
   if(code === currentTarget) {
 
+    clearInterval(timerInterval); // 🔥 zatrzymanie starego timera
+
     history.push(currentTarget);
     updateHistory();
 
@@ -240,118 +200,61 @@ function onScan(text) {
 
     flashScreen("success", "SUKCES");
 
-if(points >= 5) {
-
-  setTimeout(() => {
-
-    gameFinished = true;
-    clearInterval(timerInterval);
-    clearInterval(gameClockInterval);
-
-    overlay.style.display = "flex";
-    overlay.innerText = "WYGRANA!\nCzas: " + 
-      document.getElementById("gameClock").innerText;
-
-  }, 400);
-
-  return;
-}
+    if(points >= 5) {
+      setTimeout(() => {
+        gameFinished = true;
+        clearInterval(timerInterval);
+        clearInterval(gameClockInterval);
+        overlay.style.display = "flex";
+        overlay.innerText = "WYGRANA!\nCzas: " + 
+          document.getElementById("gameClock").innerText +
+          "\nTrasa: " + history.join(" → ");
+      }, 400);
+      return;
+    }
 
     setTimeout(() => {
-      pickNextTarget();
-      startTimer();
+      moveToNextTarget();
+      startTimer();  // 🔥 start nowego odliczania dla kolejnej litery
     }, 400);
 
   } else {
     flashScreen("error", "BŁĘDNY KOD");
   }
 }
-
-/* KONIEC */
-function endGame(msg) {
-  clearInterval(timerInterval);
-  document.getElementById("screen-game").style.display = "none";
-  document.getElementById("screen-end").style.display = "block";
-  document.getElementById("endMessage").innerText = msg;
+function startGameClock() {
+  gameStartTime = Date.now();
+  gameClockInterval = setInterval(() => {
+    const elapsed = Date.now() - gameStartTime;
+    const minutes = Math.floor(elapsed/60000);
+    const seconds = Math.floor((elapsed/1000)%60);
+    gameClockEl.innerText = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+  },200);
 }
 
-/* START */
+/* ===== START ===== */
 startBtn.onclick = async () => {
-
   if ('NDEFReader' in window) {
     try {
       const nfcReader = new NDEFReader();
       await nfcReader.scan();
-
       nfcReader.onreading = event => {
         const decoder = new TextDecoder();
         const record = event.message.records[0];
         let text = decoder.decode(record.data);
-        text = text.replace(/\u0000/g, "").trim().toUpperCase();
+        text = text.replace(/\u0000/g,"").trim();
         onScan(text);
       };
-
-    } catch (error) {
-      console.log("Błąd NFC:", error);
-    }
+    } catch(e) { console.log("Błąd NFC:",e); }
   }
 
-  document.getElementById("screen-init").style.display = "none";
-  document.getElementById("screen-game").style.display = "block";
-
-  // 🔥 TU startuje zegar gry (tylko raz)
+  screenInit.style.display="none";
+  screenGame.style.display="block";
   startGameClock();
-
-  pickNextTarget();
+  initializeRoute();
   startTimer();
 };
-
-function flashScreen(type, message) {
-
-  overlay.style.display = "flex";
-  overlay.innerText = message;
-
-  if(type === "success") {
-    document.body.classList.add("flash-success");
-  }
-
-  if(type === "error") {
-    document.body.classList.add("flash-error");
-  }
-
-  setTimeout(() => {
-    document.body.classList.remove("flash-success");
-    document.body.classList.remove("flash-error");
-    overlay.style.display = "none";
-  }, 400);
-}
-
-function updateHistory() {
-  document.getElementById("historyInfo").innerText =
-    "Historia: " + history.join(" → ");
-}
-
-function startGameClock() {
-
-  gameStartTime = Date.now();
-
-  gameClockInterval = setInterval(() => {
-
-    const elapsed = Date.now() - gameStartTime;
-
-    const seconds = Math.floor(elapsed / 1000);
-    const minutes = Math.floor(seconds / 60);
-
-    const displaySeconds = seconds % 60;
-
-    document.getElementById("gameClock").innerText =
-      String(minutes).padStart(2, "0") + ":" +
-      String(displaySeconds).padStart(2, "0");
-
-  }, 200);
-}
 </script>
-
-
 </body>
 </html>
+
