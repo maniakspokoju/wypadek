@@ -81,55 +81,50 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
+const overlay = document.getElementById("overlayMessage");
+let history = [];
 const ROUTE = ["A","B","C","D","E"];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
-let history = [];
 let points = 0;
 let isLocked = false;
 let timeLeft = 5;
 let timerInterval = null;
+let gameFinished = false;
 let gameStartTime = null;
 let gameClockInterval = null;
-let gameFinished = false;
 
 const startBtn = document.getElementById("startBtn");
-const targetLetter = document.getElementById("targetLetter");
+const targetInfo = document.getElementById("targetInfo");
+const status = document.getElementById("status");
 const timerInfo = document.getElementById("timerInfo");
 const pointsEl = document.getElementById("points");
-const gameClockEl = document.getElementById("gameClock");
-const overlay = document.getElementById("overlayMessage");
-const screenInit = document.getElementById("screen-init");
-const screenGame = document.getElementById("screen-game");
-const screenEnd = document.getElementById("screen-end");
-const endMessage = document.getElementById("endMessage");
-const endRoute = document.getElementById("endRoute");
 
-/* ===== FUNKCJE ===== */
+/* HISTORIA */
+function updateHistory() {
+  document.getElementById("historyInfo").innerText =
+    "Historia: " + history.join(" → ");
+}
 
+/* LOSOWANIE STARTU I KIERUNKU */
 function initializeRoute() {
   routeIndex = Math.floor(Math.random() * ROUTE.length);
   routeDirection = Math.random() < 0.5 ? 1 : -1;
   currentTarget = ROUTE[routeIndex];
   history = [currentTarget];
-  updateDisplay();
+  targetInfo.innerHTML = `<span class="green big">${currentTarget}</span>`;
 }
 
+/* PRZEJŚCIE DO NASTĘPNEGO */
 function moveToNextTarget() {
   routeIndex = (routeIndex + routeDirection + ROUTE.length) % ROUTE.length;
   currentTarget = ROUTE[routeIndex];
   history.push(currentTarget);
-  updateDisplay();
+  targetInfo.innerHTML = `<span class="green big">${currentTarget}</span>`;
 }
 
-function updateDisplay() {
-  targetLetter.innerText = currentTarget;
-  timerInfo.innerText = `Czas: ${timeLeft}s`;
-  pointsEl.innerText = points;
-  gameClockEl.innerText = gameClockEl.innerText; // nie ruszamy
-}
-
+/* TIMER */
 function startTimer() {
   clearInterval(timerInterval);
   timeLeft = 5;
@@ -138,13 +133,14 @@ function startTimer() {
   timerInterval = setInterval(() => {
     timeLeft--;
     timerInfo.innerText = `Czas: ${timeLeft}s`;
-    if(timeLeft <=0) {
+    if(timeLeft <= 0) {
       clearInterval(timerInterval);
       lockGame();
     }
   }, 1000);
 }
 
+/* BLOKADA */
 function lockGame() {
   isLocked = true;
   document.body.classList.add("locked");
@@ -153,6 +149,7 @@ function lockGame() {
   if (navigator.vibrate) navigator.vibrate([200,100,200,100,400]);
 }
 
+/* ODBLOKOWANIE */
 function unlockGame() {
   if(!isLocked) return;
   isLocked = false;
@@ -161,6 +158,55 @@ function unlockGame() {
   startTimer();
 }
 
+/* SKAN */
+function onScan(text) {
+  if(gameFinished) return;
+
+  let code = text.toUpperCase().trim();
+
+  if(isLocked) {
+    if(code === "UNLOCK") {
+      unlockGame();
+    }
+    return;
+  }
+
+  if(code === currentTarget) {
+
+    clearInterval(timerInterval); // 🔥 zatrzymanie starego timera
+
+    history.push(currentTarget);
+    updateHistory();
+
+    points++;
+    pointsEl.innerText = points;
+
+    flashScreen("success", "SUKCES");
+
+    if(points >= 5) {
+      setTimeout(() => {
+        gameFinished = true;
+        clearInterval(timerInterval);
+        clearInterval(gameClockInterval);
+        overlay.style.display = "flex";
+        overlay.innerText = "WYGRANA!\nCzas: " + 
+          document.getElementById("gameClock").innerText +
+          "\nTrasa: " + history.join(" → ");
+      }, 400);
+      return;
+    }
+
+    setTimeout(() => {
+      moveToNextTarget();
+      startTimer();  // 🔥 start nowego odliczania dla kolejnej litery
+    }, 400);
+
+  } else {
+    flashScreen("error", "BŁĘDNY KOD");
+  }
+}
+
+/* EFEKT FLASH */
 function flashScreen(type, message) {
   overlay.style.display = "flex";
   overlay.innerText = message;
@@ -171,60 +217,11 @@ function flashScreen(type, message) {
   setTimeout(() => {
     document.body.classList.remove("flash-success");
     document.body.classList.remove("flash-error");
-    if(!isLocked) overlay.style.display = "none";
-  }, 800);
+    overlay.style.display = "none";
+  }, 700); // 🔥 wydłużone, żeby było dłużej widoczne
 }
 
-function onScan(text) {
-  if(gameFinished) return;
-
-  const code = text.toUpperCase().trim();
-
-  if(isLocked) {
-    if(code==="UNLOCK") unlockGame();
-    return;
-  }
-
-  if(code===currentTarget) {
-    points++;
-    history.push(currentTarget);
-    updateDisplay();
-    flashScreen("success","SUKCES");
-
-    if(points>=5) {
-      gameFinished=true;
-      clearInterval(timerInterval);
-      clearInterval(gameClockInterval);
-      setTimeout(()=> {
-        screenGame.style.display="none";
-        screenEnd.style.display="block";
-        endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-        endRoute.innerText = "Trasa: " + history.join(" → ");
-      },800);
-      return;
-    }
-
-    setTimeout(()=> {
-      moveToNextTarget();
-      startTimer();
-    },800);
-
-  } else {
-    flashScreen("error","BŁĘDNY KOD");
-  }
-}
-
-function startGameClock() {
-  gameStartTime = Date.now();
-  gameClockInterval = setInterval(() => {
-    const elapsed = Date.now() - gameStartTime;
-    const minutes = Math.floor(elapsed/60000);
-    const seconds = Math.floor((elapsed/1000)%60);
-    gameClockEl.innerText = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-  },200);
-}
-
-/* ===== START ===== */
+/* START */
 startBtn.onclick = async () => {
   if ('NDEFReader' in window) {
     try {
@@ -234,20 +231,37 @@ startBtn.onclick = async () => {
         const decoder = new TextDecoder();
         const record = event.message.records[0];
         let text = decoder.decode(record.data);
-        text = text.replace(/\u0000/g,"").trim();
+        text = text.replace(/\u0000/g, "").trim().toUpperCase();
         onScan(text);
       };
-    } catch(e) { console.log("Błąd NFC:",e); }
+    } catch (error) {
+      console.log("Błąd NFC:", error);
+    }
   }
 
-  screenInit.style.display="none";
-  screenGame.style.display="block";
-  startGameClock();
-  initializeRoute();
-  startTimer();
+  document.getElementById("screen-init").style.display = "none";
+  document.getElementById("screen-game").style.display = "block";
+
+  startGameClock();    // 🔥 zegar gry
+  initializeRoute();   // 🔥 losowy start + kierunek
+  startTimer();        // 🔥 pierwszy odliczany czas
 };
+
+/* ZEGAR GRY */
+function startGameClock() {
+  gameStartTime = Date.now();
+  gameClockInterval = setInterval(() => {
+    const elapsed = Date.now() - gameStartTime;
+    const seconds = Math.floor(elapsed / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const displaySeconds = seconds % 60;
+    document.getElementById("gameClock").innerText =
+      String(minutes).padStart(2,"0") + ":" + String(displaySeconds).padStart(2,"0");
+  }, 200);
+}
 </script>
 </body>
 </html>
+
 
 
