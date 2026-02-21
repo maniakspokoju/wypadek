@@ -119,7 +119,7 @@
 </style></head>
 
 <body>
-						<h1>Mini gra QR - 9.6.5</h1>
+						<h1>Mini gra QR - 9.6.6</h1>
 
 <div id="screen-init">
   <p>Zeskanowałeś kod startowy.</p>
@@ -153,6 +153,7 @@ let points = 0;
 let isLocked = false;
 let timeLeft = 5;
 let timerInterval = null;
+let gameFinished = false;
 
 /* ELEMENTY */
 const startBtn = document.getElementById("startBtn");
@@ -211,6 +212,8 @@ function unlockGame() {
 /* SKAN */
 function onScan(text) {
 
+  if(gameFinished) return;   // <<< BLOKADA CAŁKOWITA
+
   let code = text.toUpperCase().trim();
 
   if(isLocked) {
@@ -230,10 +233,22 @@ function onScan(text) {
 
     flashScreen("success", "SUKCES");
 
-    if(points >= 5) {
-      setTimeout(() => endGame("Wygrana! 5 punktów"), 400);
-      return;
-    }
+if(points >= 5) {
+
+  setTimeout(() => {
+
+    gameFinished = true;
+    clearInterval(timerInterval);
+    isLocked = false;
+
+    document.body.classList.remove("locked");
+    overlay.style.display = "flex";
+    overlay.innerText = "WYGRANA!";
+
+  }, 400);
+
+  return;
+}
 
     setTimeout(() => {
       pickNextTarget();
