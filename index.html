@@ -60,7 +60,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.4</h1>
+																																			<h1>Mini gra QR – 9.8.5</h1>
 
 <div id="screen-init">
   <label>
@@ -247,18 +247,34 @@ startBtn.onclick = async () => {
   const pointsInput = parseInt(document.getElementById("inputPoints").value);
   const timeInput = parseInt(document.getElementById("inputTime").value);
 
-  // Walidacja wartości
   if(pointsInput >= 3 && pointsInput <= 7) maxPoints = pointsInput;
   if(timeInput >= 3 && timeInput <= 60) scanTime = timeInput;
 
-  // Ukrycie ekranu startowego
   screenInit.style.display = "none";
   screenGame.style.display = "block";
 
-  // Start zegara i inicjalizacja gry
   startGameClock();
   initializeRoute();
   startTimer();
+
+  // 🔥 OBSŁUGA NFC – przyłożenie tagu wywoła onScan
+  if ('NDEFReader' in window) {
+    try {
+      const nfcReader = new NDEFReader();
+      await nfcReader.scan();
+
+      nfcReader.onreading = event => {
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        let text = decoder.decode(record.data);
+        text = text.replace(/\u0000/g,"").trim();
+        onScan(text);
+      };
+
+    } catch(e) {
+      console.log("Błąd NFC:", e);
+    }
+  }
 };
 </script>
 </body>
