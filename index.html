@@ -63,26 +63,14 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.8</h1>
+																																			<h1>Mini gra QR – 9.8.6</h1>
 
 <div id="screen-init">
-<label>
-  Wybierz trasę:
-  <select id="selectRoute">
-    <option value="5">Trasa 5: AAA</option>
-    <option value="6">Trasa 6: BBBBBB</option>
-    <option value="7">Trasa 7: CCCCCCC</option>
-    <option value="8">Trasa 8: DDDDDDDD</option>
-    <option value="9">Trasa 9: EEEEEEEEE</option>
-    <option value="10">Trasa 10: FFFFFFFFFF</option>
-    <option value="11">Trasa 11: GGGGGGGGGGG</option>
-    <option value="12">Trasa 12: ABCDEFGABCDE</option>
-    <option value="13">Trasa 13: BCDEFGABCDEFA</option>
-    <option value="14">Trasa 14: CDEFGABCDEFGAB</option>
-    <option value="15">Trasa 15: DEFGABCDEFGABC</option>
-  </select>
-</label>
-<br><br>
+  <label>
+    Liczba punktów do zdobycia (3-7):
+    <input type="number" id="inputPoints" min="3" max="7" value="7">
+  </label>
+  <br><br>
   <label>
     Czas na zeskanowanie kolejnej litery w sekundach (3-60):
     <input type="number" id="inputTime" min="3" max="60" value="10">
@@ -108,19 +96,7 @@ button:active { background: #0056b3; }
 </div>
 
 <script>
-const AVAILABLE_ROUTES = {
-  5: ["A","C","B","E","G"],
-  6: ["F","B","D","A","G","C"],
-  7: ["C","E","A","D","F","B","G"],
-  8: ["B","G","D","C","F","A","E","B"],
-  9: ["D","A","C","F","B","G","E","C","A"],
-  10: ["E","B","D","A","G","C","F","B","D","G"],
-  11: ["A","C","F","B","E","G","D","C","A","F","B"],
-  12: ["G","D","B","E","C","F","A","G","C","D","B","E"],
-  13: ["B","E","A","C","F","D","G","B","C","E","A","F","D"],
-  14: ["C","F","A","D","B","G","E","C","F","B","D","A","E","G"],
-  15: ["D","B","G","C","E","A","F","D","B","C","G","E","A","F","C"]
-};
+const ROUTE = ["A","B","C","D","E","F","G"];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
@@ -150,15 +126,10 @@ const endRoute = document.getElementById("endRoute");
 /* ===== FUNKCJE ===== */
 
 function initializeRoute() {
-  // losowa litera startowa w trasie
   routeIndex = Math.floor(Math.random() * ROUTE.length);
-
-  // losowy kierunek: 1 = do przodu, -1 = wstecz
   routeDirection = Math.random() < 0.5 ? 1 : -1;
-
   currentTarget = ROUTE[routeIndex];
   history = [currentTarget];
-
   updateDisplay();
 }
 
@@ -275,38 +246,37 @@ function startGameClock() {
 
 /* ===== START ===== */
 startBtn.onclick = async () => {
+  // Pobranie wartości z pól i konwersja na liczby
+  const pointsInput = parseInt(document.getElementById("inputPoints").value);
   const timeInput = parseInt(document.getElementById("inputTime").value);
+
+  if(pointsInput >= 3 && pointsInput <= 7) maxPoints = pointsInput;
   if(timeInput >= 3 && timeInput <= 60) scanTime = timeInput;
 
-  // 🔹 pobieramy trasę z selecta
-  const routeLength = parseInt(document.getElementById("selectRoute").value);
-  ROUTE.splice(0, ROUTE.length, ...AVAILABLE_ROUTES[routeLength]); // nadpisujemy ROUTE wybraną trasą
-
-  // ukrycie ekranu startowego
   screenInit.style.display = "none";
   screenGame.style.display = "block";
 
-  // start gry
   startGameClock();
   initializeRoute();
   startTimer();
 
-  // obsługa NFC
+  // 🔥 OBSŁUGA NFC – przyłożenie tagu wywoła onScan
   if ('NDEFReader' in window) {
     try {
       const nfcReader = new NDEFReader();
       await nfcReader.scan();
+
       nfcReader.onreading = event => {
-        for(const record of event.message.records){
-          if(record.recordType === "text"){
-            const decoder = new TextDecoder(record.encoding || "utf-8");
-            let text = decoder.decode(record.data);
-            text = text.replace(/\u0000/g,"").trim();
-            onScan(text);
-          }
-        }
+        const decoder = new TextDecoder();
+        const record = event.message.records[0];
+        let text = decoder.decode(record.data);
+        text = text.replace(/\u0000/g,"").trim();
+        onScan(text);
       };
-    } catch(e){ console.log("Błąd NFC:", e); }
+
+    } catch(e) {
+      console.log("Błąd NFC:", e);
+    }
   }
 };
 </script>
