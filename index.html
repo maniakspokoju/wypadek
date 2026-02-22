@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Mini gra QR – 9.7.1</title>
+<title>Mini gra QR – 9.8.6</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -63,7 +63,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.6</h1>
+																																			<h1>Mini gra QR – 9.8.9</h1>
 
 <div id="screen-init">
   <label>
@@ -93,10 +93,24 @@ button:active { background: #0056b3; }
 <div id="screen-end">
   <div id="endMessage"></div>
   <div id="endRoute"></div>
+  <div id="resultTableContainer" style="margin-top:20px; max-height:400px; overflow-y:auto;">
+    <table id="resultTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+      <thead>
+        <tr>
+          <th>Tag NFC</th>
+          <th>Czas od poprzedniego punktu</th>
+          <th>Czas całkowity</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Wyniki będą dodawane dynamicznie -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-const ROUTE = ["A","B","C","D","E","F","G"];
+const ROUTE = ["A","D","G","E","B","F","C"];
 let routeIndex = 0;
 let routeDirection = 1;
 let currentTarget = null;
@@ -110,6 +124,7 @@ let gameClockInterval = null;
 let gameFinished = false;
 let maxPoints = 7;    // domyślnie 7 punktów
 let scanTime = 10;    // domyślnie 10 sekund na literę
+let scanHistory = []; // { tag: "A", delta: 3.5, total: 12.2 }
 
 const startBtn = document.getElementById("startBtn");
 const targetLetter = document.getElementById("targetLetter");
@@ -195,6 +210,21 @@ function onScan(text) {
   if(gameFinished) return;
 
   const code = text.toUpperCase().trim();
+  const now = Date.now();
+  let delta = 0;
+
+  if(scanHistory.length === 0) {
+    delta = (now - gameStartTime) / 1000; // sekundy od startu
+  } else {
+    delta = (now - scanHistory[scanHistory.length - 1].timestamp) / 1000;
+  }
+
+  scanHistory.push({
+    tag: code,
+    delta: delta.toFixed(2) + " s",
+    total: ((now - gameStartTime)/1000).toFixed(2) + " s",
+    timestamp: now
+  });
 
   if(isLocked) {
     if(code==="UNLOCK") unlockGame();
@@ -202,38 +232,48 @@ function onScan(text) {
   }
 
   if(code===currentTarget) {
-    // 🔥 zatrzymanie licznika natychmiast po prawidłowym skanie
     clearInterval(timerInterval);
 
     points++;
     history.push(currentTarget);
     updateDisplay();
-
     flashScreen("success","SUKCES");
 
-if(points >= maxPoints) {
-  gameFinished = true;
-  clearInterval(timerInterval);
-  clearInterval(gameClockInterval);
-  setTimeout(()=> {
-    screenGame.style.display="none";
-    screenEnd.style.display="block";
-    endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-    endRoute.innerText = "Trasa: " + history.join(" → ");
-  },800);
-  return;
-}
+    if(points >= maxPoints) {
+      gameFinished = true;
+      clearInterval(timerInterval);
+      clearInterval(gameClockInterval);
+
+      setTimeout(()=> {
+        screenGame.style.display="none";
+        screenEnd.style.display="block";
+        endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
+        endRoute.innerText = "Trasa: " + history.join(" → ");
+
+        // 🔹 Wypełniamy tabelę wyników
+        const tbody = document.querySelector("#resultTable tbody");
+        tbody.innerHTML = ""; // czyszczenie
+        scanHistory.forEach(s => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${s.tag}</td><td>${s.delta}</td><td>${s.total}</td>`;
+          tbody.appendChild(tr);
+        });
+
+        // przewijamy do dołu tabeli
+        document.getElementById("resultTableContainer").scrollTop = document.getElementById("resultTableContainer").scrollHeight;
+      }, 800);
+      return;
+    }
 
     setTimeout(()=> {
       moveToNextTarget();
-      startTimer(); // 🔥 reset nowego 5-sekundowego timera
+      startTimer();
     },1000);
 
   } else {
     flashScreen("error","BŁĘDNY KOD");
   }
 }
-
 function startGameClock() {
   gameStartTime = Date.now();
   gameClockInterval = setInterval(() => {
@@ -282,6 +322,7 @@ startBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
