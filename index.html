@@ -29,7 +29,7 @@ button:active { background: #0056b3; }
 #screen-game { display:none; text-align:center; }
 
 #targetLetter {
-  font-size: 140px;
+  font-size: 220px;
   font-weight: bold;
   margin: 0;
   line-height: 1.2;
@@ -56,14 +56,14 @@ button:active { background: #0056b3; }
 .flash-success { background-color: #00cc44 !important; color: black !important; }
 .flash-error { background-color: #ff4444 !important; color: black !important; }
 
-#screen-end { display:none; padding:20px; text-align:center; font-size:28px; }
+#screen-end { display:none; padding:5px; text-align:center; font-size:28px; }
 #endMessage { font-size:48px; font-weight:bold; color:white; background-color:green; padding:20px; margin:20px 0; }
 #endRoute { margin-top:20px; font-size:28px; }
 </style>
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.9.1</h1>
+																																			<h1>Mini gra QR – 9.9.2</h1>
 
 <div id="screen-init">
   <label>
@@ -97,9 +97,9 @@ button:active { background: #0056b3; }
     <table id="resultTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
       <thead>
         <tr>
-          <th>Tag NFC</th>
-          <th>Czas od poprzedniego punktu</th>
-          <th>Czas całkowity</th>
+          <th>Tagi</th>
+          <th>Od do</th>
+          <th>Suma</th>
         </tr>
       </thead>
       <tbody>
@@ -322,6 +322,7 @@ startBtn.onclick = async () => {
 </script>
 </body>
 </html>
+
 
 
 
