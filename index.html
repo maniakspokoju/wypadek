@@ -63,7 +63,7 @@ button:active { background: #0056b3; }
 </head>
 <body>
 
-																																			<h1>Mini gra QR – 9.8.9</h1>
+																																			<h1>Mini gra QR – 9.9.1</h1>
 
 <div id="screen-init">
   <label>
@@ -92,7 +92,7 @@ button:active { background: #0056b3; }
 
 <div id="screen-end">
   <div id="endMessage"></div>
-  <div id="endRoute"></div>
+ <!--  <div id="endRoute"></div> -->
   <div id="resultTableContainer" style="margin-top:20px; max-height:400px; overflow-y:auto;">
     <table id="resultTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
       <thead>
@@ -248,7 +248,7 @@ function onScan(text) {
         screenGame.style.display="none";
         screenEnd.style.display="block";
         endMessage.innerText = `WYGRANA!\nCzas: ${gameClockEl.innerText}`;
-        endRoute.innerText = "Trasa: " + history.join(" → ");
+     //   endRoute.innerText = "Trasa: " + history.join(" → ");
 
         // 🔹 Wypełniamy tabelę wyników
         const tbody = document.querySelector("#resultTable tbody");
